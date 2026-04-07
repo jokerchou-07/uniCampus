@@ -1614,6 +1614,14 @@ export default function App() {
                   </p>
                 </div>
 
+                <div className="bg-orange-50/50 p-5 rounded-3xl border border-dashed border-orange-200">
+                  <p className="text-[10px] text-orange-600 font-bold text-center leading-relaxed">
+                    此為測試模式
+                    <br />
+                    請輸入手機 0912345678 與密碼 1234 進行登入
+                  </p>
+                </div>
+
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-1">
                     <label className="text-[8px] font-black text-gray-400 uppercase ml-4">
@@ -1667,13 +1675,7 @@ export default function App() {
                   </button>
                 </form>
 
-                <div className="bg-orange-50/50 p-5 rounded-3xl border border-dashed border-orange-200">
-                  <p className="text-[10px] text-orange-600 font-bold text-center leading-relaxed">
-                    提示：此為校園體驗模式
-                    <br />
-                    請輸入手機 0912345678 與密碼 1234 進行登入
-                  </p>
-                </div>
+                
               </div>
             )}
           </div>
