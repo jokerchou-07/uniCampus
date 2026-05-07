@@ -1,4 +1,24 @@
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth, db, storage } from './lib/firebase';
+import { 
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut
+} from 'firebase/auth';
+import { 
+  collection, 
+  addDoc, 
+  setDoc,      // 補上這行，這是 handleSignIn 報錯的主因
+  deleteDoc,
+  query, 
+  where, 
+  getDocs, 
+  orderBy, 
+  onSnapshot,
+  doc,
+  updateDoc,
+  limit
+} from 'firebase/firestore';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Home,
@@ -45,42 +65,12 @@ import {
   CreditCard as IDCard,
 } from 'lucide-react';
 
-import { initializeApp } from 'firebase/app';
-import {
-  getAuth,
-  onAuthStateChanged,
-  signInAnonymously,
-  signInWithCustomToken,
-} from 'firebase/auth';
-import {
-  getFirestore,
-  collection,
-  doc,
-  updateDoc,
-  setDoc,
-  onSnapshot,
-  addDoc,
-  deleteDoc,
-} from 'firebase/firestore';
+
 
 // -----------------------------
 // Firebase 安全初始化
 // -----------------------------
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
-};
 
-
-const app = firebaseConfig ? initializeApp(firebaseConfig) : null;
-const auth = app ? getAuth(app) : null;
-const db = app ? getFirestore(app) : null;
-const storage = app ? getStorage(app) : null;
 const appId =
   typeof __app_id !== 'undefined' ? __app_id : 'uni-campus-master-final';
 const initialAuthToken =
@@ -203,58 +193,7 @@ const STUDENT_REWARDS = [
   },
 ];
 
-const TEST_MARKET_ITEMS = [
-  {
-    id: 'test1',
-    name: 'MacBook Air M1 灰',
-    price: 15500,
-    category: '電子產品',
-    user: 'A大學 資工系 李同學',
-    at: 1712102400000,
-    desc: '電池健康度 92%，外觀無傷。',
-    img: 'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?w=600',
-  },
-  {
-    id: 'test2',
-    name: '經濟學原理 (下) 課本',
-    price: 250,
-    category: '書籍',
-    user: 'A大學 管院 張同學',
-    at: 1712102400000,
-    desc: '期末考必備。',
-    img: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600',
-  },
-  {
-    id: 'test3',
-    name: '宿舍用靜音小冰箱',
-    price: 1200,
-    category: '生活用品',
-    user: 'B大學 企管系 王同學',
-    at: 1712102400000,
-    desc: '製冷正常，搬家出清。',
-    img: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=600',
-  },
-  {
-    id: 'test4',
-    name: 'RG 鋼彈模型 (全新)',
-    price: 650,
-    category: '玩具',
-    user: 'A大學 機械系 陳同學',
-    at: 1712102400000,
-    desc: '全新未拆。',
-    img: 'https://images.unsplash.com/photo-1593305841991-05c297ba4575?w=600',
-  },
-  {
-    id: 'test5',
-    name: '羅技 MX Anywhere 3',
-    price: 800,
-    category: '電子產品',
-    user: 'C大學 資傳系 林同學',
-    at: 1712102400000,
-    desc: '功能完好。',
-    img: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=600',
-  },
-];
+const TEST_MARKET_ITEMS = [];
 
 // -----------------------------
 // localStorage helpers
@@ -300,7 +239,7 @@ export default function App() {
     name: '訪客',
     phone: '未登入',
   });
-  const [marketItems, setMarketItems] = useState(TEST_MARKET_ITEMS);
+  const [marketItems, setMarketItems] = useState([]);
   const [marketCart, setMarketCart] = useState([]);
   const [foodCart, setFoodCart] = useState([]);
   const [userHistory, setUserHistory] = useState([]);
@@ -425,14 +364,17 @@ export default function App() {
     const unsubMarket = onSnapshot(
       collection(db, 'artifacts', appId, 'public', 'data', 'marketItems'),
       (s) => {
-        const dbItems = s.docs.map((d) => ({ id: d.id, ...d.data() }));
-        const merged = [...dbItems, ...TEST_MARKET_ITEMS]
-          .reduce((acc, curr) => {
-            if (!acc.find((i) => i.id === curr.id)) acc.push(curr);
-            return acc;
-          }, [])
-          .sort((a, b) => (b.at || 0) - (a.at || 0));
-        setMarketItems(merged);
+        // 直接從 Firestore 抓取所有文件
+        const dbItems = s.docs.map((d) => ({ 
+          id: d.id, 
+          ...d.data() 
+        }));
+        
+        // 依照時間排序 (最新的在前面)
+        const sortedItems = dbItems.sort((a, b) => (b.at || 0) - (a.at || 0));
+        
+        // 直接設定，不再合併 TEST_MARKET_ITEMS
+        setMarketItems(sortedItems);
       }
     );
 
@@ -501,77 +443,65 @@ export default function App() {
     writeLS(LS_KEYS.history, userHistory);
   }, [userHistory, firebaseEnabled]);
 
+
+  const handleLogOut = async () => {
+    setIsLoading(true);
+    try {
+      if (firebaseEnabled) {
+        await signOut(auth);
+      }
+      // 重置本地狀態
+      setUser(null);
+      setUserProfile({
+        points: 1280,
+        name: '訪客',
+        phone: '未登入',
+      });
+      showToast("已成功登出");
+      setCurrentPage('home'); // 登出後導回首頁
+    } catch (err) {
+      console.error("登出失敗：", err);
+      showToast("登出時發生錯誤");
+    }
+    setIsLoading(false);
+  };
+
   const handleSignIn = async (e) => {
     if (e) e.preventDefault();
-
-    if (loginForm.phone !== '0912345678' || loginForm.password !== '1234') {
-      return showToast('帳號或密碼錯誤 (0912345678 / 1234)');
-    }
+    
+    // 技巧：將 0912345678 變成 0912345678@phone.com
+    const fakeEmail = `${loginForm.phone}@phone.com`;
+    
 
     setIsLoading(true);
-    setConfirmMode(null);
-
-    if (!firebaseEnabled) {
-      const localUser = { uid: 'local-user-001' };
-      const profile = { name: '王大明', phone: '0912345678', points: 1280 };
-      setUser(localUser);
-      setUserProfile(profile);
-      setCheckoutData((prev) => ({
-        ...prev,
-        receiver: profile.name,
-        phone: profile.phone,
-      }));
-      showToast('登入成功，歡迎王大明同學');
-      setCurrentPage('home');
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      let loggedUser;
-      if (initialAuthToken) {
-        const cred = await signInWithCustomToken(auth, initialAuthToken);
-        loggedUser = cred.user;
-      } else {
-        const cred = await signInAnonymously(auth);
-        loggedUser = cred.user;
-      }
-
-      await setDoc(
-        doc(db, 'artifacts', appId, 'users', loggedUser.uid, 'profile', 'info'),
-        {
-          name: '王大明',
-          phone: '0912345678',
-          points: 1280,
-        },
-        { merge: true }
-      );
-
-      showToast('登入成功，歡迎王大明同學');
+      // 實際上還是用 Email 登入函數，但使用者感覺是在用手機登入
+      await signInWithEmailAndPassword(auth, fakeEmail, loginForm.password);
+      showToast("手機號碼登入成功！");
       setCurrentPage('home');
     } catch (err) {
-      showToast('登入連線失敗');
+      console.error("登入錯誤：", err.code);
+      showToast("手機或密碼錯誤");
     }
-
     setIsLoading(false);
   };
 
   const handleRegister = async (e) => {
     if (e) e.preventDefault();
 
-    if (
-      !registerForm.name ||
-      !registerForm.studentId ||
-      !registerForm.phone ||
-      !registerForm.password
-    ) {
+    // 1. 欄位檢查 (增加密碼長度檢查，Firebase 要求至少 6 位)
+    if (!registerForm.name || !registerForm.phone || !registerForm.password) {
       return showToast('請完整填寫註冊資料');
+    }
+    if (registerForm.password.length < 6) {
+      return showToast('密碼至少需要 6 位數');
     }
 
     setIsLoading(true);
 
+    // 處理 Local 模式
     if (!firebaseEnabled) {
-      const localUser = { uid: 'local-user-001' };
+      const localUser = { uid: 'local-user-' + Date.now() };
       const profile = {
         name: registerForm.name,
         studentId: registerForm.studentId,
@@ -581,28 +511,36 @@ export default function App() {
       };
       setUser(localUser);
       setUserProfile(profile);
-      setCheckoutData((prev) => ({
-        ...prev,
-        receiver: profile.name,
-        phone: profile.phone,
-      }));
-      showToast('註冊成功！');
+      showToast('註冊成功！(Local)');
       setIsRegistering(false);
       setCurrentPage('home');
       setIsLoading(false);
       return;
     }
 
+    // 處理 Firebase 模式
     try {
-      const cred = await signInAnonymously(auth);
+      const fakeEmail = `${registerForm.phone.trim()}@phone.com`;
+
+      // A. 建立 Auth 帳號
+      const cred = await createUserWithEmailAndPassword(
+        auth,
+        fakeEmail,
+        registerForm.password
+      );
+      
+      // B. 建立資料庫文件
+      // 注意這裡的路徑：必須包含 appId (uni-campus-master-final)
       await setDoc(
         doc(db, 'artifacts', appId, 'users', cred.user.uid, 'profile', 'info'),
         {
           name: registerForm.name,
-          studentId: registerForm.studentId,
-          phone: registerForm.phone,
-          university: registerForm.university,
-          points: 500,
+          studentId: registerForm.studentId || '',
+          phone: registerForm.phone.trim(),
+          university: registerForm.university || '',
+          email: fakeEmail, // 存入備查
+          points: 500,      // 初始贈送點數
+          createdAt: Date.now()
         },
         { merge: true }
       );
@@ -611,10 +549,15 @@ export default function App() {
       setIsRegistering(false);
       setCurrentPage('home');
     } catch (err) {
-      showToast('註冊失敗');
+      console.error("註冊失敗：", err.code);
+      if (err.code === 'auth/email-already-in-use') {
+        showToast('此號碼已被註冊過');
+      } else {
+        showToast('註冊失敗，請稍後再試');
+      }
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   const addFoodToCart = async (item, store) => {
@@ -1588,15 +1531,14 @@ export default function App() {
                     </div>
                     <ChevronRight size={16} className="text-gray-200" />
                   </button>
-
                   <button
-                    onClick={() => showToast('正在切換模式...')}
-                    className="w-full p-6 bg-orange-50 text-orange-600 rounded-[24px] flex justify-between items-center border border-orange-100 active:scale-[0.98] transition-all"
+                    onClick={handleLogOut}
+                    className="w-full p-6 bg-red-50 text-red-600 rounded-[24px] flex justify-between items-center border border-red-100 active:scale-[0.98] transition-all mt-3"
                   >
                     <div className="flex items-center gap-4 font-black text-sm uppercase tracking-tighter">
-                      <RefreshCw size={18} /> 一般 OPENPOINT 模式
+                      <LogIn size={18} className="rotate-180" /> 登出帳戶
                     </div>
-                    <ChevronRight size={16} className="text-gray-400" />
+                    <ChevronRight size={16} className="text-gray-300" />
                   </button>
                 </div>
               </>
