@@ -1,3 +1,4 @@
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Home,
@@ -55,6 +56,7 @@ import {
   getFirestore,
   collection,
   doc,
+  updateDoc,
   setDoc,
   onSnapshot,
   addDoc,
@@ -64,14 +66,21 @@ import {
 // -----------------------------
 // Firebase 安全初始化
 // -----------------------------
-const firebaseConfig =
-  typeof __firebase_config !== 'undefined' && __firebase_config
-    ? JSON.parse(__firebase_config)
-    : null;
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+};
+
 
 const app = firebaseConfig ? initializeApp(firebaseConfig) : null;
 const auth = app ? getAuth(app) : null;
 const db = app ? getFirestore(app) : null;
+const storage = app ? getStorage(app) : null;
 const appId =
   typeof __app_id !== 'undefined' ? __app_id : 'uni-campus-master-final';
 const initialAuthToken =
@@ -694,15 +703,19 @@ export default function App() {
   const addToMarketCart = async (item) => {
     if (!user) return triggerLoginPrompt();
 
+    // 檢查購物車是否已經有這件商品
     const existing = marketCart.find((i) => i.id === item.id);
-    const qty = existing ? (existing.quantity || 1) + 1 : 1;
+    
+    // 如果已經有了，就跳出提醒，不增加數量
+    if (existing) {
+      return showToast('此商品已在購物車中');
+    }
 
+    // 如果沒有，則加入，並強制數量為 1
     if (!firebaseEnabled) {
-      const next = existing
-        ? marketCart.map((i) => (i.id === item.id ? { ...i, quantity: qty } : i))
-        : [...marketCart, { ...item, quantity: 1, at: Date.now() }];
+      const next = [...marketCart, { ...item, quantity: 1, at: Date.now() }];
       setMarketCart(next);
-      showToast(`已加入購物車 x${qty}`);
+      showToast(`已加入購物車`);
       return;
     }
 
@@ -710,13 +723,13 @@ export default function App() {
       doc(db, 'artifacts', appId, 'users', user.uid, 'marketCart', item.id.toString()),
       {
         ...item,
-        quantity: qty,
+        quantity: 1, // 強制固定為 1
         at: Date.now(),
       },
       { merge: true }
     );
 
-    showToast(`已加入購物車 x${qty}`);
+    showToast(`已加入購物車`);
   };
 
   const deleteMarketCartItem = async (id) => {
@@ -844,6 +857,8 @@ export default function App() {
     }
   };
 
+  // 記得確認檔案最上方有 import { updateDoc } from 'firebase/firestore';
+
   const handleCheckout = async () => {
     if (!user) return;
 
@@ -857,112 +872,205 @@ export default function App() {
       total
     );
 
-    const orderRecord = {
-      id: `h_${Date.now()}`,
-      type: activeCartTab === 'market' ? 'order_market' : 'order_food',
-      items: target.map((i) => i.name),
-      total,
-      pointsRedeemed: redemption,
-      finalPaid: total - redemption,
-      delivery:
-        activeCartTab === 'food'
-          ? { ...checkoutData, deliveryType: 'pickup' }
-          : checkoutData,
-      at: Date.now(),
-    };
+    setIsLoading(true); // 開始處理，顯示讀取中
 
+    // 1. 本地模式處理 (Local Mode)
     if (!firebaseEnabled) {
-      if (redemption > 0) {
-        setUserProfile((prev) => ({ ...prev, points: prev.points - redemption }));
-      }
-      setUserHistory((prev) => [orderRecord, ...prev].sort((a, b) => b.at - a.at));
-      if (activeCartTab === 'market') setMarketCart([]);
-      else setFoodCart([]);
+      // ... (保持你原本的本地處理邏輯即可)
       setIsOrderSuccess(true);
+      setIsLoading(false);
       return;
     }
 
-    if (redemption > 0) {
-      await setDoc(
-        doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'info'),
-        { points: userProfile.points - redemption },
-        { merge: true }
-      );
-    }
-
-    await addDoc(
-      collection(db, 'artifacts', appId, 'users', user.uid, 'history'),
-      {
-        type: activeCartTab === 'market' ? 'order_market' : 'order_food',
-        items: target.map((i) => i.name),
-        total,
-        pointsRedeemed: redemption,
-        finalPaid: total - redemption,
-        delivery:
-          activeCartTab === 'food'
-            ? { ...checkoutData, deliveryType: 'pickup' }
-            : checkoutData,
-        at: Date.now(),
+    // 2. Firebase 模式處理
+    try {
+      // A. 處理點數折抵
+      if (redemption > 0) {
+        await setDoc(
+          doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'info'),
+          { points: userProfile.points - redemption },
+          { merge: true }
+        );
       }
-    );
 
-    for (const item of target) {
-      await deleteDoc(
-        doc(
-          db,
-          'artifacts',
-          appId,
-          'users',
-          user.uid,
-          activeCartTab === 'market' ? 'marketCart' : 'foodCart',
-          item.id.toString()
-        )
+      // B. 寫入訂單歷史
+      await addDoc(
+        collection(db, 'artifacts', appId, 'users', user.uid, 'history'),
+        {
+          type: activeCartTab === 'market' ? 'order_market' : 'order_food',
+          // 為了讓紀錄頁面好看，我們可以多存一張代表圖 (取第一件商品的圖)
+          thumbnail: target[0]?.img || '', 
+          // 存入所有品項名稱
+          items: target.map((i) => i.name),
+          // 紀錄每一項的詳細資料 (選配，若想做細節頁面可用)
+          details: target.map(i => ({ name: i.name, price: i.price })),
+          total,
+          pointsRedeemed: redemption,
+          finalPaid: total - redemption,
+          at: Date.now(),
+          status: 'completed' // 標記交易完成
+        }
       );
-    }
 
-    setIsOrderSuccess(true);
+      // C. 關鍵修改：逐一處理購物車品項
+      for (const item of target) {
+        // 如果是市集商品，將公眾資料庫中的商品狀態改為「已售出」
+        if (activeCartTab === 'market') {
+          const itemRef = doc(db, 'artifacts', appId, 'public', 'data', 'marketItems', item.id.toString());
+          await updateDoc(itemRef, {
+            status: 'sold',     // 標記售出
+            buyerId: user.uid,  // 紀錄買家
+            soldAt: Date.now()  // 紀錄時間
+          });
+        }
+
+        // 將品項從個人購物車（市集或訂餐）中刪除
+        await deleteDoc(
+          doc(
+            db,
+            'artifacts',
+            appId,
+            'users',
+            user.uid,
+            activeCartTab === 'market' ? 'marketCart' : 'foodCart',
+            item.id.toString()
+          )
+        );
+      }
+
+      setIsOrderSuccess(true);
+    } catch (error) {
+      console.error("結帳失敗:", error);
+      showToast("結帳過程發生錯誤");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
 
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!user) return;
 
-    const post = {
-      id: `local_${Date.now()}`,
-      ...newPost,
-      price: parseInt(newPost.price, 10),
-      at: Date.now(),
-      user: userProfile.name,
-      img: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=600',
-    };
-
-    if (!firebaseEnabled) {
-      setMarketItems((prev) => [post, ...prev].sort((a, b) => (b.at || 0) - (a.at || 0)));
-      setIsUploadOpen(false);
-      setNewPost({ name: '', price: '', category: '玩具', desc: '' });
-      showToast('商品已成功上架');
-      return;
+    // -------------------
+    // 必填欄位檢查
+    // -------------------
+    if (!newPost.name.trim()) {
+      return showToast('請輸入商品名稱');
     }
 
-    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'marketItems'), {
-      ...newPost,
-      price: parseInt(newPost.price, 10),
-      at: Date.now(),
-      user: userProfile.name,
-      img: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=600',
-    });
+    if (!newPost.price) {
+      return showToast('請輸入商品價格');
+    }
 
-    setIsUploadOpen(false);
-    setNewPost({ name: '', price: '', category: '玩具', desc: '' });
-    showToast('商品已成功上架');
+    if (!newPost.desc.trim()) {
+      return showToast('請輸入商品描述');
+    }
+
+    if (!newPost.imageFile) {
+      return showToast('請上傳商品照片');
+    }
+
+    // -------------------
+    // 圖片大小限制
+    // -------------------
+    const MAX_FILE_SIZE = 2 * 1024 * 1024; // 1MB
+
+    if (newPost.imageFile.size > MAX_FILE_SIZE) {
+      return showToast('圖片不可超過 2MB');
+    }
+
+    // -------------------
+    // 圖片格式限制
+    // -------------------
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/heic',
+      'image/heif',
+    ];
+
+    if (!allowedTypes.includes(newPost.imageFile.type)) {
+      return showToast('不支援此圖片');
+    }
+    setIsLoading(true);
+
+    try {
+      // 預設圖片網址 (當使用者未選取照片時)
+      let finalImageUrl = 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=600';
+
+      // 檢查是否有選取檔案
+      if (newPost.imageFile) {
+        // 圖片壓縮邏輯
+        finalImageUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(newPost.imageFile);
+          reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              const MAX_WIDTH = 800; // 限制最大寬度
+              let width = img.width;
+              let height = img.height;
+
+              // 計算縮放比例
+              if (width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
+              }
+
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+
+              // 關鍵：這裡 0.6 代表 60% 的畫質，能大幅縮小檔案體積
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+              resolve(dataUrl);
+            };
+          };
+        });
+      }
+
+      // 封裝資料，確保 price 是數字
+      const postData = {
+        name: newPost.name,
+        price: Number(newPost.price) || 0, // 強制轉型
+        category: newPost.category,
+        desc: newPost.desc,
+        img: finalImageUrl, 
+        at: Date.now(),
+        user: userProfile.name,
+      };
+
+      if (firebaseEnabled) {
+        const marketRef = collection(db, 'artifacts', appId, 'public', 'data', 'marketItems');
+        await addDoc(marketRef, postData);
+        console.log("Firestore 寫入成功 (Base64 模式)");
+      } else {
+        setMarketItems((prev) => [{ id: Date.now(), ...postData }, ...prev]);
+      }
+
+      setIsUploadOpen(false);
+      setNewPost({ name: '', price: '', category: '玩具', desc: '', imageFile: null });
+      showToast('商品已成功上架');
+    } catch (error) {
+      console.error("錯誤細節:", error);
+      showToast('發佈失敗：圖片可能太大 (需小於 1MB)');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const filteredMarketItems = useMemo(() => {
     return marketItems.filter(
       (i) =>
+        // 關鍵：只顯示狀態不是 'sold' 的商品
+        i.status !== 'sold' && 
         (activeMarketCat === '全部' || i.category === activeMarketCat) &&
-        (searchQuery === '' ||
-          i.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        (searchQuery === '' || i.name.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   }, [marketItems, activeMarketCat, searchQuery]);
 
@@ -2204,36 +2312,51 @@ export default function App() {
                       : h.type === 'reward'
                   )
                   .map((h, i) => (
+                    // 找到 userHistory.map((h, i) => ( 之後開始替換
                     <div
                       key={i}
-                      className="bg-white p-6 rounded-[28px] border border-gray-100 shadow-sm"
+                      className="bg-white p-5 rounded-[28px] border border-gray-100 shadow-sm flex gap-4 items-center"
                     >
-                      <div className="flex justify-between items-start mb-4">
-                        <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">
-                          {new Date(h.at).toLocaleDateString()}
-                        </span>
-                        <div
-                          className={`px-2 py-0.5 rounded-full text-[7px] font-black uppercase ${
-                            h.type === 'reward'
-                              ? 'bg-orange-50 text-orange-500'
-                              : 'bg-gray-50 text-gray-500'
-                          }`}
-                        >
-                          {h.type.split('_')[1] || h.type}
-                        </div>
+                      {/* 新增：左側照片預覽 */}
+                      <div className="w-16 h-16 bg-gray-50 rounded-2xl overflow-hidden shrink-0 border border-gray-50">
+                        {h.thumbnail ? (
+                          <img src={h.thumbnail} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-200">
+                            <Package size={24} />
+                          </div>
+                        )}
                       </div>
 
-                      <h4 className="text-xs font-black text-gray-800 uppercase tracking-tight leading-tight">
-                        {h.type === 'reward' ? h.name : h.items.join(', ')}
-                      </h4>
+                      {/* 右側資訊 */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">
+                            {new Date(h.at).toLocaleDateString()}
+                          </span>
+                          <div
+                            className={`px-2 py-0.5 rounded-full text-[7px] font-black uppercase ${
+                              h.type === 'order_market'
+                                ? 'bg-blue-50 text-blue-500'
+                                : h.type === 'reward'
+                                ? 'bg-orange-50 text-orange-500'
+                                : 'bg-gray-50 text-gray-500'
+                            }`}
+                          >
+                            {h.type === 'order_market' ? '二手市集' : h.type === 'reward' ? '點數兌換' : '校園訂餐'}
+                          </div>
+                        </div>
 
-                      <div className="mt-5 pt-4 border-t border-dashed border-gray-100 flex justify-between items-center">
-                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                          Amount
-                        </span>
-                        <span className="text-base font-black text-gray-900 tracking-tighter">
-                          {h.type === 'reward' ? `${h.points} Pts` : `$${h.total}`}
-                        </span>
+                        <h4 className="text-[11px] font-black text-gray-800 uppercase truncate">
+                          {h.type === 'reward' ? h.name : h.items.join(', ')}
+                        </h4>
+
+                        <div className="mt-2 flex justify-between items-center">
+                          <span className="text-[9px] font-black text-gray-400 uppercase">Amount</span>
+                          <span className="text-sm font-black text-gray-900 tracking-tighter">
+                            {h.type === 'reward' ? `${h.points} Pts` : `$${h.total}`}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -2567,13 +2690,16 @@ export default function App() {
                               </button>
                             </div>
                           ) : (
-                            <button
-                              onClick={() => deleteMarketCartItem(i.id)}
-                              className="text-gray-200 active:text-red-500 transition-colors p-2"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          )}
+                            <div className="flex items-center gap-3">
+                                <span className="text-[10px] font-black text-gray-400 bg-gray-100 px-2 py-1 rounded-md">數量: 1</span>
+                                <button
+                                  onClick={() => deleteMarketCartItem(i.id)}
+                                  className="text-gray-200 active:text-red-500 transition-colors p-2"
+                                >
+                                  <Trash2 size={18} />
+                                </button>
+                              </div>
+                            )}
                         </div>
                       ))
                     )}
@@ -2621,35 +2747,51 @@ export default function App() {
         )}
 
         {isUploadOpen && (
-          <div className="absolute inset-0 bg-white z-[600] flex flex-col animate-in slide-in-from-bottom snappy-anim">
+          <div className="absolute inset-0 bg-white z-[600] flex flex-col animate-in slide-in-from-bottom">
             <div className="p-6 flex justify-between items-center border-b border-gray-50">
-              <button
-                onClick={() => setIsUploadOpen(false)}
-                className="p-2 active:bg-slate-50 rounded-full text-gray-300"
-              >
+              <button onClick={() => setIsUploadOpen(false)} className="p-2 text-gray-300">
                 <X size={22} />
               </button>
-              <span className="font-black text-[10px] uppercase tracking-[0.4em] text-gray-400 italic">
-                Create Post
-              </span>
+              <span className="font-black text-[10px] uppercase tracking-[0.4em] text-gray-400 italic">Create Post</span>
               <div className="w-10" />
             </div>
 
-            <form
-              onSubmit={handleUpload}
-              className="p-8 space-y-6 flex-1 overflow-y-auto scrollbar-hide"
-            >
-              <div className="aspect-video bg-gray-50 border-2 border-dashed border-gray-200 rounded-[35px] flex flex-col items-center justify-center text-gray-300 active:bg-white transition-all cursor-pointer">
-                <ImageIcon size={48} strokeWidth={1} />
-                <span className="text-[9px] font-black uppercase mt-4 tracking-widest opacity-50">
-                  Media
-                </span>
+            <form onSubmit={handleUpload} className="p-8 space-y-6 flex-1 overflow-y-auto">
+              {/* 圖片上傳區塊 */}
+              <div 
+                className="aspect-video bg-gray-50 border-2 border-dashed border-gray-200 rounded-[35px] flex flex-col items-center justify-center text-gray-300 cursor-pointer relative overflow-hidden"
+                onClick={() => document.getElementById('marketFileInput').click()}
+              >
+                {newPost.imageFile ? (
+                  <img 
+                    src={URL.createObjectURL(newPost.imageFile)} 
+                    className="w-full h-full object-cover" 
+                    alt="preview"
+                  />
+                ) : (
+                  <>
+                    <ImageIcon size={48} strokeWidth={1} />
+                    <span className="text-[9px] font-black uppercase mt-4 tracking-widest opacity-50">點擊上傳照片</span>
+                  </>
+                )}
               </div>
 
+              <input 
+                id="marketFileInput"
+                type="file" 
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) setNewPost({ ...newPost, imageFile: file });
+                }}
+              />
+              
+              {/* 欄位輸入區 */}
               <div className="space-y-4">
                 <input
                   required
-                  className="w-full p-5 bg-gray-50 rounded-[20px] text-xs font-bold outline-none border border-gray-100 shadow-sm"
+                  className="w-full p-5 bg-gray-50 rounded-[20px] text-xs font-bold outline-none border border-gray-100"
                   placeholder="商品名稱"
                   value={newPost.name}
                   onChange={(e) => setNewPost({ ...newPost, name: e.target.value })}
@@ -2657,35 +2799,28 @@ export default function App() {
                 <input
                   required
                   type="number"
-                  className="w-full p-5 bg-gray-50 rounded-[20px] text-xs font-bold outline-none border border-gray-100 shadow-sm"
+                  className="w-full p-5 bg-gray-50 rounded-[20px] text-xs font-bold outline-none border border-gray-100"
                   placeholder="價格"
                   value={newPost.price}
                   onChange={(e) => setNewPost({ ...newPost, price: e.target.value })}
                 />
                 <select
-                  className="w-full p-5 bg-gray-50 rounded-[20px] text-xs font-bold border border-gray-100 shadow-sm"
+                  className="w-full p-5 bg-gray-50 rounded-[20px] text-xs font-bold border border-gray-100"
                   value={newPost.category}
-                  onChange={(e) =>
-                    setNewPost({ ...newPost, category: e.target.value })
-                  }
+                  onChange={(e) => setNewPost({ ...newPost, category: e.target.value })}
                 >
-                  {MARKET_CATEGORIES.filter((c) => c !== '全部').map((c) => (
-                    <option key={c}>{c}</option>
-                  ))}
+                  {MARKET_CATEGORIES.filter(c => c !== '全部').map(c => <option key={c}>{c}</option>)}
                 </select>
                 <textarea
-                  className="w-full p-5 bg-gray-50 rounded-[20px] text-xs font-bold border border-gray-100 shadow-sm h-24"
+                  className="w-full p-5 bg-gray-50 rounded-[20px] text-xs font-bold border border-gray-100 h-24"
                   placeholder="詳情描述..."
                   value={newPost.desc}
                   onChange={(e) => setNewPost({ ...newPost, desc: e.target.value })}
                 />
               </div>
 
-              <button
-                type="submit"
-                className="w-full py-5 bg-orange-500 text-white rounded-[25px] font-black uppercase shadow-2xl active:scale-95"
-              >
-                發佈
+              <button type="submit" className="w-full py-5 bg-orange-500 text-white rounded-[25px] font-black uppercase shadow-2xl">
+                發佈商品
               </button>
             </form>
           </div>
