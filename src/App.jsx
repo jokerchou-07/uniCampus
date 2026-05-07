@@ -66,6 +66,29 @@ import {
 } from 'lucide-react';
 
 
+import { 
+  MARKET_CATEGORIES, 
+  FOOD_CATEGORIES, 
+  CAMPUS_STORES, 
+  STUDENT_REWARDS, 
+  LS_KEYS 
+} from './lib/constants';
+
+import { readLS, writeLS, colorClasses } from './lib/utils';
+
+//頁面
+import Navbar from './components/Navbar';
+import Toast from './components/Toast';
+import CartDrawer from './components/CartDrawer';
+import MarketPage from './pages/MarketPage';
+import HomePage from './pages/HomePage';
+import OrderingPage from './pages/OrderingPage';
+import ProfilePage from './pages/ProfilePage';
+import ItemDetailPage from './pages/ItemDetailPage';
+import StoreDetailPage from './pages/StoreDetailPage';
+import CheckoutPage from './pages/CheckoutPage';
+import HistoryPage from './pages/HistoryPage';
+import ExchangePage from './pages/ExchangePage';
 
 // -----------------------------
 // Firebase 安全初始化
@@ -79,158 +102,18 @@ const initialAuthToken =
 // -----------------------------
 // 靜態資料
 // -----------------------------
-const MARKET_CATEGORIES = ['全部', '玩具', '電子產品', '書籍', '生活用品'];
-const FOOD_CATEGORIES = ['全部', '早餐', '午餐', '晚餐', '飲品'];
-
-const CAMPUS_STORES = [
-  {
-    id: 'f1',
-    name: '晨曦活力早餐',
-    rating: 4.8,
-    wait: '10 min',
-    category: '早餐',
-    img: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400',
-    menu: [
-      { id: 'menu1', name: '肉蛋吐司', price: 55 },
-      { id: 'menu2', name: '培根起司堡', price: 70 },
-      { id: 'menu3', name: '大杯奶茶', price: 25 },
-    ],
-  },
-  {
-    id: 'f2',
-    name: '學霸日式簡餐',
-    rating: 4.5,
-    wait: '20 min',
-    category: '午餐',
-    img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400',
-    menu: [
-      { id: 'menu4', name: '日式豬排丼', price: 120 },
-      { id: 'menu5', name: '唐揚炸雞飯', price: 135 },
-    ],
-  },
-  {
-    id: 'f3',
-    name: '大三元快餐',
-    rating: 4.2,
-    wait: '15 min',
-    category: '午餐',
-    img: 'https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600',
-    menu: [
-      { id: 'menu6', name: '招牌排骨飯', price: 95 },
-      { id: 'menu7', name: '雞腿飯', price: 105 },
-    ],
-  },
-  {
-    id: 'f4',
-    name: '校園義大利麵',
-    rating: 4.6,
-    wait: '25 min',
-    category: '晚餐',
-    img: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=400',
-    menu: [
-      { id: 'menu8', name: '白醬培根麵', price: 140 },
-      { id: 'menu9', name: '紅醬肉醬麵', price: 130 },
-    ],
-  },
-  {
-    id: 'f5',
-    name: '午茶時光甜點',
-    rating: 4.9,
-    wait: '5 min',
-    category: '飲品',
-    img: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400',
-    menu: [
-      { id: 'menu10', name: '珍珠鮮奶茶', price: 65 },
-      { id: 'menu11', name: '紅豆紫米粥', price: 50 },
-    ],
-  },
-  {
-    id: 'f6',
-    name: '飽飽大飯糰',
-    rating: 4.4,
-    wait: '8 min',
-    category: '早餐',
-    img: 'https://images.unsplash.com/photo-1512152272829-e3139592d56f?w=400',
-    menu: [
-      { id: 'menu12', name: '傳統紫米飯糰', price: 45 },
-      { id: 'menu13', name: '鮪魚玉米飯糰', price: 50 },
-    ],
-  },
-];
-
-const STUDENT_REWARDS = [
-  {
-    id: 'r1',
-    name: '期末加油包',
-    points: 450,
-    brand: '熬夜必備',
-    desc: '內含大杯美式咖啡 x1 + 能量飲 x1',
-    icon: Coffee,
-  },
-  {
-    id: 'r2',
-    name: '歐趴糖禮盒',
-    points: 600,
-    brand: 'ALL PASS',
-    desc: '精選進口巧克力與綜合果乾',
-    icon: Gift,
-  },
-  {
-    id: 'r3',
-    name: '校園影印100張',
-    points: 200,
-    brand: '報告救星',
-    desc: '校內影印部專用',
-    icon: BookOpen,
-  },
-  {
-    id: 'r4',
-    name: '校內餐廳優惠卷',
-    points: 100,
-    brand: '專屬福利',
-    desc: '享 50 元現折優惠',
-    icon: Zap,
-  },
-];
-
 const TEST_MARKET_ITEMS = [];
+
+const navItems = [
+  { id: 'home', icon: Home },
+  { id: 'market', icon: ShoppingBag },
+  { id: 'ordering', icon: Utensils },
+  { id: 'profile', icon: User },
+];
 
 // -----------------------------
 // localStorage helpers
 // -----------------------------
-const LS_KEYS = {
-  user: 'uni-campus-user',
-  profile: 'uni-campus-profile',
-  marketItems: 'uni-campus-market-items',
-  marketCart: 'uni-campus-market-cart',
-  foodCart: 'uni-campus-food-cart',
-  history: 'uni-campus-history',
-};
-
-function readLS(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function writeLS(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
-function colorClasses(color) {
-  const map = {
-    orange: 'text-orange-600 bg-orange-50',
-    green: 'text-green-600 bg-green-50',
-    blue: 'text-blue-600 bg-blue-50',
-    purple: 'text-purple-600 bg-purple-50',
-    red: 'text-red-600 bg-red-50',
-  };
-  return map[color] || 'text-gray-600 bg-gray-50';
-}
-
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [user, setUser] = useState(null);
@@ -1038,699 +921,75 @@ export default function App() {
     switch (currentPage) {
       case 'home':
         return (
-          <div className="px-8 py-2 space-y-6 animate-in fade-in">
-            <div className="flex justify-between items-center pt-4">
-              <div className="space-y-0.5">
-                <span className="text-[9px] font-black text-orange-400 uppercase tracking-[0.3em] block">
-                  Welcome Back
-                </span>
-                <h1 className="text-2xl font-black text-[#1A1A1A] tracking-tight leading-none">
-                  Hi, {user ? userProfile.name : '訪客同學'}
-                </h1>
-              </div>
-              {!user && (
-                <button
-                  onClick={() => setCurrentPage('profile')}
-                  className="bg-orange-500 text-white p-2.5 rounded-xl active:scale-90 transition-all shadow-lg shadow-orange-100"
-                >
-                  <LogIn size={20} />
-                </button>
-              )}
-            </div>
-
-            <div className="relative h-40 rounded-[35px] overflow-hidden shadow-[0_15px_30px_-10px_rgba(255,130,0,0.3)] border border-orange-200">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#FF9838] via-[#FF8200] to-[#FF4E00]" />
-              <div className="relative z-10 p-8 h-full flex flex-col justify-between text-white">
-                <div className="flex justify-between items-start">
-                  <span className="text-[13px] font-bold text-white/80 uppercase tracking-[0.1em]">
-                    Openpoint Balance
-                  </span>
-                  <button
-                    onClick={() => {
-                      if (!user) return triggerLoginPrompt();
-                      setCurrentPage('exchange');
-                    }}
-                    className="p-1.5 bg-white/20 backdrop-blur-md rounded-xl border border-white/20 active:scale-90"
-                  >
-                    <Ticket size={20} />
-                  </button>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-black italic tracking-tighter">
-                    {user ? userProfile.points : '---'}
-                  </span>
-                  <span className="text-xs font-black text-white/50 uppercase tracking-widest italic">
-                    Pts
-                  </span>
-                </div>
-                <div className="w-full h-1 bg-black/10 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-white rounded-full shadow-[0_0_8px_white]"
-                    style={{ width: user ? '65%' : '0%' }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4 pb-4">
-              <div className="flex items-center gap-2 px-2">
-                <LayoutGrid size={12} className="text-orange-500" />
-                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                  校園特區 / Campus Services
-                </h3>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  onClick={() => {
-                    if (!user) return triggerLoginPrompt();
-                    setCurrentPage('market');
-                  }}
-                  className="bg-white border border-gray-100 p-4 rounded-3xl shadow-sm flex items-center gap-3 active:scale-95 transition-all"
-                >
-                  <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-500">
-                    <ShoppingBag size={20} />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-black text-[#1A1A1A]">二手市集</p>
-                    <p className="text-[8px] text-orange-400 font-bold uppercase tracking-widest leading-none">
-                      Market
-                    </p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    if (!user) return triggerLoginPrompt();
-                    setCurrentPage('ordering');
-                  }}
-                  className="bg-white border border-gray-100 p-4 rounded-3xl shadow-sm flex items-center gap-3 active:scale-95 transition-all"
-                >
-                  <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center text-red-500">
-                    <Utensils size={20} />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-black text-[#1A1A1A]">校內訂餐</p>
-                    <p className="text-[8px] text-red-400 font-bold uppercase tracking-widest leading-none">
-                      Ordering
-                    </p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    if (!user) return triggerLoginPrompt();
-                    setCurrentPage('foodMap');
-                  }}
-                  className="bg-white border border-gray-100 p-4 rounded-3xl shadow-sm flex items-center gap-3 active:scale-95 transition-all"
-                >
-                  <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-500">
-                    <MapIcon size={20} />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-black text-[#1A1A1A]">i 珍食</p>
-                    <p className="text-[8px] text-green-400 font-bold uppercase tracking-widest leading-none">
-                      Food
-                    </p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    if (!user) return triggerLoginPrompt();
-                    setSelectedTrackingOrder(null);
-                    setCurrentPage('orderTracking');
-                  }}
-                  className="bg-white border border-gray-100 p-4 rounded-3xl shadow-sm flex items-center gap-3 active:scale-95 transition-all"
-                >
-                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500">
-                    <Package size={20} />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-black text-[#1A1A1A]">物流專區</p>
-                    <p className="text-[8px] text-blue-400 font-bold uppercase tracking-widest leading-none">
-                      Logistics
-                    </p>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-4 pb-4">
-              <div className="flex items-center gap-2 px-2">
-                <LayoutGrid size={12} className="text-orange-500" />
-                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                  廣告特區 / Campus Ads
-                </h3>
-              </div>
-
-              <div className="flex flex-col gap-4 px-1">
-                {[
-                  {
-                    t: '登入校園模式!',
-                    s: '專屬學生OPENPOINT模式',
-                    c: 'orange',
-                    img: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=200',
-                  },
-                  {
-                    t: '點數限時加倍送',
-                    s: '指定鮮食 OPENPOINT 10倍',
-                    c: 'green',
-                    img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200',
-                  },
-                  {
-                    t: '舊衣回收愛地球',
-                    s: '寄送舊衣到指定位置換好禮',
-                    c: 'blue',
-                    img: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=200',
-                  },
-                  {
-                    t: '期末加油禮包',
-                    s: '點數兌換專區限時優惠中',
-                    c: 'purple',
-                    img: 'https://images.unsplash.com/photo-1517842645767-c639042777db?w=200',
-                  },
-                  {
-                    t: '統一一起瘋青春',
-                    s: '一鍵查看校園活動',
-                    c: 'red',
-                    img: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=200',
-                  },
-                ].map((ad, i) => {
-                  const adColor = colorClasses(ad.c);
-                  return (
-                    <div
-                      key={i}
-                      className="w-full bg-white border border-gray-100 rounded-[28px] p-4 flex items-center gap-4 shadow-sm active:scale-[0.98] transition-all"
-                    >
-                      <div className="w-16 h-16 bg-gray-50 rounded-2xl shrink-0 overflow-hidden shadow-inner">
-                        <img src={ad.img} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-[11px] font-black text-[#1A1A1A] leading-tight">
-                          {ad.t}
-                        </p>
-                        <p
-                          className={`text-[9px] font-bold mt-1 inline-block px-2 py-0.5 rounded-full ${adColor}`}
-                        >
-                          {ad.s}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+          <HomePage 
+            user={user}
+            userProfile={userProfile}
+            setCurrentPage={setCurrentPage}
+            triggerLoginPrompt={triggerLoginPrompt}
+            colorClasses={colorClasses}
+          />
         );
-
       case 'market':
         return (
-          <div className="pb-24 animate-in slide-in-from-right">
-            <div className="sticky top-0 bg-white/95 backdrop-blur-md z-40 px-8 py-4 border-b border-gray-50">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-black text-[#1A1A1A] italic uppercase tracking-tighter">
-                  Market
-                </h2>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setIsSearchOpen(!isSearchOpen)}
-                    className={`p-2.5 rounded-xl border transition-all active:scale-90 ${
-                      isSearchOpen
-                        ? 'bg-orange-500 text-white border-orange-500'
-                        : 'bg-white text-orange-500 border-gray-100 shadow-sm'
-                    }`}
-                  >
-                    <Search size={20} />
-                  </button>
-                  <button
-                    onClick={() => setIsUploadOpen(true)}
-                    className="p-2.5 bg-orange-500 text-white rounded-xl shadow-lg active:scale-90 transition-transform"
-                  >
-                    <Plus size={22} />
-                  </button>
-                </div>
-              </div>
-
-              {isSearchOpen && (
-                <div className="pb-2 animate-in slide-in-from-top-2">
-                  <div className="relative">
-                    <input
-                      autoFocus
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="搜尋商品..."
-                      className="w-full p-3 pl-10 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-bold outline-none focus:border-orange-400 transition-all shadow-inner"
-                    />
-                    <Search size={14} className="absolute left-4 top-3.5 text-gray-400" />
-                    {searchQuery && (
-                      <button
-                        onClick={() => setSearchQuery('')}
-                        className="absolute right-4 top-3 text-gray-300"
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="px-8 py-3 flex gap-2 overflow-x-auto scrollbar-hide mb-2">
-              {MARKET_CATEGORIES.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setActiveMarketCat(c)}
-                  className={`px-5 py-2 rounded-full text-[10px] font-black whitespace-nowrap transition-all ${
-                    activeMarketCat === c
-                      ? 'bg-orange-500 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-400'
-                  }`}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-
-            <div className="px-8 grid grid-cols-2 gap-5">
-              {filteredMarketItems.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => {
-                    setSelectedItem(item);
-                    setCurrentPage('itemDetail');
-                  }}
-                  className="bg-white border border-gray-50 rounded-[28px] overflow-hidden shadow-md active:scale-[0.98] transition-all"
-                >
-                  <div className="aspect-square relative">
-                    <img src={item.img} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="p-4">
-                    <p className="text-[11px] font-black text-gray-800 truncate uppercase tracking-tighter">
-                      {item.name}
-                    </p>
-                    <p className="text-orange-500 font-black text-sm mt-0.5">
-                      ${item.price}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <MarketPage 
+            isSearchOpen={isSearchOpen}
+            setIsSearchOpen={setIsSearchOpen}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            setIsUploadOpen={setIsUploadOpen}
+            activeMarketCat={activeMarketCat}
+            setActiveMarketCat={setActiveMarketCat}
+            marketCategories={MARKET_CATEGORIES}
+            filteredMarketItems={filteredMarketItems}
+            setSelectedItem={setSelectedItem}
+            setCurrentPage={setCurrentPage}
+          />
         );
 
       case 'ordering':
         return (
-          <div className="pb-24 animate-in slide-in-from-right">
-            <div className="sticky top-0 bg-white/95 backdrop-blur-md z-40 px-8 py-4 border-b border-gray-50">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-black text-[#1A1A1A] italic uppercase tracking-tighter">
-                  Dining
-                </h2>
-                <button
-                  onClick={() => setIsSearchOpen(!isSearchOpen)}
-                  className={`p-2.5 rounded-xl border transition-all active:scale-90 ${
-                    isSearchOpen ? 'bg-orange-500 text-white' : 'bg-white text-orange-500'
-                  }`}
-                >
-                  <Search size={20} />
-                </button>
-              </div>
-
-              {isSearchOpen && (
-                <div className="pb-2 animate-in slide-in-from-top-2">
-                  <div className="relative">
-                    <input
-                      autoFocus
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="搜尋餐廳..."
-                      className="w-full p-3 pl-10 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-bold outline-none focus:border-orange-400 transition-all shadow-inner"
-                    />
-                    <Search size={14} className="absolute left-4 top-3.5 text-gray-400" />
-                    {searchQuery && (
-                      <button
-                        onClick={() => setSearchQuery('')}
-                        className="absolute right-4 top-3 text-gray-300"
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="px-8 py-3 flex gap-2 overflow-x-auto scrollbar-hide mb-4">
-              {FOOD_CATEGORIES.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setActiveFoodCat(c)}
-                  className={`px-5 py-2 rounded-full text-[10px] font-black whitespace-nowrap transition-all ${
-                    activeFoodCat === c
-                      ? 'bg-red-500 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-400'
-                  }`}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-
-            <div className="px-8 space-y-5">
-              {filteredStores.map((s) => (
-                <div
-                  key={s.id}
-                  onClick={() => {
-                    setSelectedStore(s);
-                    setCurrentPage('storeDetail');
-                  }}
-                  className="bg-white border border-gray-100 p-5 rounded-[32px] flex items-center gap-5 active:bg-gray-50 transition-all shadow-md"
-                >
-                  <img src={s.img} className="w-16 h-16 rounded-[20px] object-cover" />
-                  <div className="flex-1">
-                    <h4 className="font-black text-base text-gray-800 tracking-tighter">
-                      {s.name}
-                    </h4>
-                    <div className="flex justify-between items-center mt-2">
-                      <span className="text-[9px] font-black text-orange-500 uppercase bg-orange-50 px-2 py-0.5 rounded-full">
-                        {s.wait}
-                      </span>
-                      <span className="text-yellow-500 font-black text-xs flex items-center gap-1">
-                        <Star size={14} fill="currentColor" /> {s.rating}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <OrderingPage 
+            isSearchOpen={isSearchOpen}
+            setIsSearchOpen={setIsSearchOpen}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            activeFoodCat={activeFoodCat}
+            setActiveFoodCat={setActiveFoodCat}
+            foodCategories={FOOD_CATEGORIES}
+            filteredStores={filteredStores}
+            setSelectedStore={setSelectedStore}
+            setCurrentPage={setCurrentPage}
+          />
         );
-
       case 'storeDetail':
         return (
-          selectedStore && (
-            <div className="h-full flex flex-col bg-white animate-in slide-in-from-bottom">
-              <div className="p-4 bg-red-600 text-white flex items-center justify-between shadow-md">
-                <button
-                  onClick={() => setCurrentPage('ordering')}
-                  className="p-2 active:bg-white/10 rounded-full"
-                >
-                  <ChevronLeft size={22} />
-                </button>
-                <span className="font-black text-xs uppercase tracking-widest italic">
-                  Store Menu
-                </span>
-                <div className="w-10" />
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-8 space-y-8">
-                <div className="text-center">
-                  <img
-                    src={selectedStore.img}
-                    className="w-24 h-24 rounded-[35px] mx-auto shadow-xl border-4 border-white mb-4"
-                  />
-                  <h1 className="text-xl font-black uppercase text-gray-900 tracking-tighter">
-                    {selectedStore.name}
-                  </h1>
-                </div>
-
-                <div className="space-y-4">
-                  {selectedStore.menu.map((m) => {
-                    const inCart = foodCart.find((i) => i.id === m.id);
-                    return (
-                      <div
-                        key={m.id}
-                        className="p-5 border border-gray-50 bg-white rounded-[28px] flex items-center justify-between shadow-md"
-                      >
-                        <div>
-                          <p className="font-black text-sm uppercase text-gray-800">
-                            {m.name}
-                          </p>
-                          <p className="text-red-500 font-black text-base mt-0.5">
-                            ${m.price}
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          {inCart && (
-                            <span className="text-xs font-black text-red-500 bg-red-50 px-3 py-1 rounded-full">
-                              x{inCart.quantity}
-                            </span>
-                          )}
-                          <button
-                            onClick={() => addFoodToCart(m, selectedStore)}
-                            className="p-2.5 bg-red-500 text-white rounded-xl shadow-lg active:scale-90"
-                          >
-                            <Plus size={20} />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )
+          <StoreDetailPage 
+            selectedStore={selectedStore} 
+            setCurrentPage={setCurrentPage} 
+            foodCart={foodCart} 
+            addFoodToCart={addFoodToCart} 
+          />
         );
-
       case 'profile':
         return (
-          <div className="p-10 flex flex-col items-center animate-in slide-in-from-bottom">
-            {user ? (
-              <>
-                <div className="w-28 h-28 bg-orange-500 text-white flex items-center justify-center text-4xl font-black rounded-[35px] shadow-xl border-4 border-white mb-6">
-                  王
-                </div>
-                <h2 className="text-xl font-black text-[#1A1A1A] italic uppercase tracking-tighter">
-                  {userProfile.name}
-                </h2>
-
-                <div className="w-full mt-10 space-y-3">
-                  <button
-                    onClick={() => {
-                      setHistoryType('orders');
-                      setCurrentPage('historyView');
-                    }}
-                    className="w-full p-6 bg-gray-50 rounded-[24px] flex justify-between items-center border border-gray-50 active:bg-gray-100 transition-all"
-                  >
-                    <div className="flex items-center gap-4 font-black text-sm text-gray-700 uppercase tracking-tighter">
-                      <Receipt size={18} className="text-orange-500" /> 訂單記錄
-                    </div>
-                    <ChevronRight size={16} className="text-gray-200" />
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setHistoryType('redeems');
-                      setCurrentPage('historyView');
-                    }}
-                    className="w-full p-6 bg-gray-50 rounded-[24px] flex justify-between items-center border border-gray-50 active:bg-gray-100 transition-all"
-                  >
-                    <div className="flex items-center gap-4 font-black text-sm text-gray-700 uppercase tracking-tighter">
-                      <Gift size={18} className="text-orange-500" /> 我的兌換
-                    </div>
-                    <ChevronRight size={16} className="text-gray-200" />
-                  </button>
-                  <button
-                    onClick={handleLogOut}
-                    className="w-full p-6 bg-red-50 text-red-600 rounded-[24px] flex justify-between items-center border border-red-100 active:scale-[0.98] transition-all mt-3"
-                  >
-                    <div className="flex items-center gap-4 font-black text-sm uppercase tracking-tighter">
-                      <LogIn size={18} className="rotate-180" /> 登出帳戶
-                    </div>
-                    <ChevronRight size={16} className="text-gray-300" />
-                  </button>
-                </div>
-              </>
-            ) : isRegistering ? (
-              <div className="w-full max-w-sm space-y-8 animate-in fade-in">
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setIsRegistering(false)}
-                    className="p-2 bg-gray-50 rounded-full active:scale-90"
-                  >
-                    <ChevronLeft />
-                  </button>
-                  <h2 className="text-2xl font-black italic tracking-tighter text-gray-800 uppercase">
-                    註冊新帳號
-                  </h2>
-                </div>
-
-                <form onSubmit={handleRegister} className="space-y-4">
-                  <div className="aspect-video bg-gray-50 border-2 border-dashed border-gray-200 rounded-[25px] flex flex-col items-center justify-center text-gray-300 active:bg-white transition-all cursor-pointer">
-                    <IDCard size={40} strokeWidth={1.5} />
-                    <span className="text-[10px] font-black uppercase mt-2 tracking-widest">
-                      上傳學生證正反面
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-[8px] font-black text-gray-400 uppercase ml-2">
-                        姓名
-                      </label>
-                      <input
-                        value={registerForm.name}
-                        onChange={(e) =>
-                          setRegisterForm({ ...registerForm, name: e.target.value })
-                        }
-                        className="w-full p-4 bg-gray-50 rounded-2xl text-xs font-bold outline-none shadow-inner"
-                        placeholder="王小明"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[8px] font-black text-gray-400 uppercase ml-2">
-                        學號
-                      </label>
-                      <input
-                        value={registerForm.studentId}
-                        onChange={(e) =>
-                          setRegisterForm({
-                            ...registerForm,
-                            studentId: e.target.value,
-                          })
-                        }
-                        className="w-full p-4 bg-gray-50 rounded-2xl text-xs font-bold outline-none shadow-inner"
-                        placeholder="E140..."
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[8px] font-black text-gray-400 uppercase ml-2">
-                      大學 / 系所
-                    </label>
-                    <input
-                      value={registerForm.university}
-                      onChange={(e) =>
-                        setRegisterForm({
-                          ...registerForm,
-                          university: e.target.value,
-                        })
-                      }
-                      className="w-full p-4 bg-gray-50 rounded-2xl text-xs font-bold outline-none shadow-inner"
-                      placeholder="A大學 資工系"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[8px] font-black text-gray-400 uppercase ml-2">
-                      手機號碼 (帳號)
-                    </label>
-                    <input
-                      value={registerForm.phone}
-                      onChange={(e) =>
-                        setRegisterForm({ ...registerForm, phone: e.target.value })
-                      }
-                      className="w-full p-4 bg-gray-50 rounded-2xl text-xs font-bold outline-none shadow-inner"
-                      placeholder="09xxxxxxxx"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[8px] font-black text-gray-400 uppercase ml-2">
-                      密碼
-                    </label>
-                    <input
-                      type="password"
-                      value={registerForm.password}
-                      onChange={(e) =>
-                        setRegisterForm({
-                          ...registerForm,
-                          password: e.target.value,
-                        })
-                      }
-                      className="w-full p-4 bg-gray-50 rounded-2xl text-xs font-bold outline-none shadow-inner"
-                      placeholder="••••"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full py-5 bg-gray-900 text-white rounded-[25px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all mt-4"
-                  >
-                    提交審核並註冊
-                  </button>
-                </form>
-              </div>
-            ) : (
-              <div className="w-full max-w-sm space-y-8 animate-in fade-in">
-                <div className="text-center space-y-2">
-                  <h2 className="text-3xl font-black italic tracking-tighter text-gray-800 uppercase">
-                    Login
-                  </h2>
-                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-                    請輸入校園帳號密碼
-                  </p>
-                </div>
-
-                <div className="bg-orange-50/50 p-5 rounded-3xl border border-dashed border-orange-200">
-                  <p className="text-[10px] text-orange-600 font-bold text-center leading-relaxed">
-                    此為測試模式
-                    <br />
-                    請輸入手機 0912345678 與密碼 1234 進行登入
-                  </p>
-                </div>
-
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-[8px] font-black text-gray-400 uppercase ml-4">
-                      Phone Number
-                    </label>
-                    <input
-                      value={loginForm.phone}
-                      onChange={(e) =>
-                        setLoginForm({ ...loginForm, phone: e.target.value })
-                      }
-                      className="w-full p-5 bg-gray-50 rounded-[25px] text-xs font-bold border-none outline-none focus:ring-2 ring-orange-500/20 shadow-inner"
-                      placeholder="09xxxxxxxx"
-                    />
-                  </div>
-
-                  <div className="space-y-1 relative">
-                    <label className="text-[8px] font-black text-gray-400 uppercase ml-4">
-                      Password
-                    </label>
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={loginForm.password}
-                      onChange={(e) =>
-                        setLoginForm({ ...loginForm, password: e.target.value })
-                      }
-                      className="w-full p-5 bg-gray-50 rounded-[25px] text-xs font-bold border-none outline-none focus:ring-2 ring-orange-500/20 shadow-inner"
-                      placeholder="••••"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-5 top-9 text-gray-300"
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full py-5 bg-orange-500 text-white rounded-[25px] font-black uppercase tracking-widest shadow-xl shadow-orange-100 active:scale-95 transition-all mt-6"
-                  >
-                    登入帳戶
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsRegistering(true)}
-                    className="w-full py-5 bg-white border border-gray-100 text-gray-400 rounded-[25px] font-black uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 mt-2"
-                  >
-                    <UserPlus size={18} /> 註冊新帳號
-                  </button>
-                </form>
-
-                
-              </div>
-            )}
-          </div>
+          <ProfilePage 
+            user={user}
+            userProfile={userProfile}
+            isRegistering={isRegistering}
+            setIsRegistering={setIsRegistering}
+            loginForm={loginForm}
+            setLoginForm={setLoginForm}
+            registerForm={registerForm}
+            setRegisterForm={setRegisterForm}
+            showPassword={showPassword}
+            setShowPassword={setShowPassword}
+            handleSignIn={handleSignIn}
+            handleRegister={handleRegister}
+            handleLogOut={handleLogOut}
+            setCurrentPage={setCurrentPage}
+            setHistoryType={setHistoryType}
+          />
         );
-
       case 'foodMap':
         return (
           <div className="h-full bg-gray-50 flex flex-col animate-in slide-in-from-right">
@@ -1895,418 +1154,43 @@ export default function App() {
 
       case 'exchange':
         return (
-          <div className="h-full flex flex-col bg-white animate-in slide-in-from-right">
-            <div className="p-4 border-b border-gray-50 flex items-center justify-between">
-              <button
-                onClick={() => setCurrentPage('home')}
-                className="p-2 bg-gray-50 rounded-full"
-              >
-                <ChevronLeft />
-              </button>
-              <span className="font-black text-xs uppercase tracking-widest text-gray-800">
-                點數兌換
-              </span>
-              <div className="w-10" />
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-8 space-y-6">
-              <div className="bg-gradient-to-br from-orange-500 to-red-500 text-white p-6 rounded-[32px] shadow-xl">
-                <p className="text-[10px] uppercase tracking-widest font-black text-white/70">
-                  Current Balance
-                </p>
-                <p className="text-4xl font-black mt-2">{userProfile.points}</p>
-                <p className="text-xs font-bold text-white/70 mt-1">OPENPOINT</p>
-              </div>
-
-              <div className="space-y-4">
-                {STUDENT_REWARDS.map((reward) => {
-                  const Icon = reward.icon;
-                  const canRedeem = userProfile.points >= reward.points;
-                  return (
-                    <div
-                      key={reward.id}
-                      className="bg-white border border-gray-100 rounded-[28px] p-5 shadow-sm"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center">
-                          <Icon size={24} />
-                        </div>
-
-                        <div className="flex-1">
-                          <p className="text-sm font-black text-gray-800">{reward.name}</p>
-                          <p className="text-[9px] text-orange-500 font-bold uppercase mt-1">
-                            {reward.brand}
-                          </p>
-                          <p className="text-[11px] text-gray-500 mt-2">{reward.desc}</p>
-                        </div>
-                      </div>
-
-                      <div className="mt-5 flex items-center justify-between">
-                        <span className="text-base font-black text-gray-900">
-                          {reward.points} 點
-                        </span>
-                        <button
-                          disabled={!canRedeem}
-                          onClick={() => {
-                            setPendingReward(reward);
-                            setConfirmMode('confirmExchange');
-                          }}
-                          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${
-                            canRedeem
-                              ? 'bg-orange-500 text-white shadow-lg active:scale-95'
-                              : 'bg-gray-100 text-gray-400'
-                          }`}
-                        >
-                          {canRedeem ? '立即兌換' : '點數不足'}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+          <ExchangePage 
+            userProfile={userProfile} 
+            studentRewards={STUDENT_REWARDS} 
+            setPendingReward={setPendingReward} 
+            setConfirmMode={setConfirmMode} 
+            setCurrentPage={setCurrentPage} 
+          />
         );
-
-      case 'checkout': {
-        const list = activeCartTab === 'market' ? marketCart : foodCart;
-        const total = list.reduce((a, b) => a + (b.price || 0) * (b.quantity || 1), 0);
-        const final = total - Math.min(checkoutData.pointRedemption || 0, userProfile.points || 0, total);
-
+      case 'checkout':
         return (
-          <div className="h-full flex flex-col bg-white animate-in slide-in-from-right">
-            <div className="p-4 border-b border-gray-50 flex items-center gap-4">
-              <button
-                onClick={() => setCurrentPage('home')}
-                className="p-2 bg-gray-50 rounded-full"
-              >
-                <ChevronLeft />
-              </button>
-              <span className="font-black text-xs uppercase tracking-widest text-gray-800">
-                Checkout 結帳
-              </span>
-            </div>
-
-            <div className="flex-1 p-8 space-y-8 overflow-y-auto scrollbar-hide pb-32">
-              <div className="bg-gray-50 p-6 rounded-[32px] border border-gray-100 shadow-inner">
-                <h3 className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-4 italic">
-                  Summary
-                </h3>
-                <div className="space-y-3">
-                  {list.map((i) => (
-                    <div
-                      key={i.id}
-                      className="flex justify-between items-center py-1.5 border-b border-dashed border-gray-200 text-xs font-bold text-gray-700"
-                    >
-                      <span>
-                        {i.name} x{i.quantity || 1}
-                      </span>
-                      <span>${i.price * (i.quantity || 1)}</span>
-                    </div>
-                  ))}
-                  <div className="pt-4 mt-2 flex flex-col gap-1 border-t border-gray-300">
-                    <div className="flex justify-between items-center text-gray-400 text-[10px]">
-                      <span>SUBTOTAL</span>
-                      <span>${total}</span>
-                    </div>
-                    <div className="flex justify-between items-center mt-2 text-2xl font-black text-orange-600 tracking-tighter">
-                      <span>TOTAL</span>
-                      <span>${final}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 ml-2 text-orange-500">
-                  <MapPin size={14} />
-                  <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                    配送與取貨
-                  </h3>
-                </div>
-
-                {activeCartTab === 'market' ? (
-                  <div className="bg-white border border-gray-100 p-5 rounded-[32px] space-y-3 shadow-sm">
-                    <input
-                      value={checkoutData.receiver}
-                      onChange={(e) =>
-                        setCheckoutData({ ...checkoutData, receiver: e.target.value })
-                      }
-                      className="w-full p-3 bg-gray-50 rounded-xl text-xs font-bold border-none outline-none shadow-inner"
-                      placeholder="收件人"
-                    />
-                    <input
-                      value={checkoutData.phone}
-                      onChange={(e) =>
-                        setCheckoutData({ ...checkoutData, phone: e.target.value })
-                      }
-                      className="w-full p-3 bg-gray-50 rounded-xl text-xs font-bold border-none outline-none shadow-inner"
-                      placeholder="電話"
-                    />
-                    <input
-                      value={checkoutData.locationDetail}
-                      onChange={(e) =>
-                        setCheckoutData({
-                          ...checkoutData,
-                          locationDetail: e.target.value,
-                        })
-                      }
-                      className="w-full p-3 bg-gray-50 rounded-xl text-xs font-bold border-none outline-none shadow-inner"
-                      placeholder="位置 / 門市"
-                    />
-                  </div>
-                ) : (
-                  <div className="bg-orange-50/50 border border-orange-100 p-5 rounded-[32px] flex items-center gap-4 text-orange-800 shadow-inner">
-                    <Store size={24} />
-                    <div className="flex-1 font-black text-xs">
-                      至餐廳現場取餐
-                      <p className="text-[9px] text-orange-600">
-                        請憑訂單畫面至櫃檯取餐
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 ml-2 text-orange-500">
-                  <CreditCard size={14} />
-                  <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                    支付方式
-                  </h3>
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setCheckoutData({ ...checkoutData, payment: 'card' })}
-                    className={`flex-1 py-3 rounded-2xl text-[10px] font-black transition-all ${
-                      checkoutData.payment === 'card'
-                        ? 'bg-orange-500 text-white shadow-lg'
-                        : 'bg-gray-100 text-gray-400'
-                    }`}
-                  >
-                    信用卡支付
-                  </button>
-                  <button
-                    onClick={() => setCheckoutData({ ...checkoutData, payment: 'cash' })}
-                    className={`flex-1 py-3 rounded-2xl text-[10px] font-black transition-all ${
-                      checkoutData.payment === 'cash'
-                        ? 'bg-orange-500 text-white shadow-lg'
-                        : 'bg-gray-100 text-gray-400'
-                    }`}
-                  >
-                    取貨付款
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 ml-2 text-orange-500">
-                  <Wallet size={14} />
-                  <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                    點數折抵
-                  </h3>
-                </div>
-
-                <div className="bg-orange-50 border border-orange-100 rounded-[32px] p-5 flex items-center gap-3 shadow-inner">
-                  <input
-                    type="number"
-                    value={checkoutData.pointRedemption || ''}
-                    onChange={(e) =>
-                      setCheckoutData({
-                        ...checkoutData,
-                        pointRedemption: Math.min(
-                          parseInt(e.target.value, 10) || 0,
-                          userProfile.points,
-                          total
-                        ),
-                      })
-                    }
-                    className="flex-1 p-3 bg-white rounded-xl text-xs font-bold border-none outline-none"
-                    placeholder="輸入點數"
-                  />
-                  <button
-                    onClick={() =>
-                      setCheckoutData({
-                        ...checkoutData,
-                        pointRedemption: Math.min(userProfile.points, total),
-                      })
-                    }
-                    className="bg-orange-500 text-white px-4 py-3 rounded-xl text-[10px] font-black active:scale-95"
-                  >
-                    MAX
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 border-t border-gray-50 absolute bottom-0 w-full bg-white/95 z-30">
-              <button
-                onClick={handleCheckout}
-                className="w-full py-4 bg-gray-900 text-white rounded-[20px] font-black uppercase tracking-widest active:scale-95 transition-all shadow-xl"
-              >
-                確認訂單並送出
-              </button>
-            </div>
-          </div>
+          <CheckoutPage 
+            activeCartTab={activeCartTab}
+            marketCart={marketCart}
+            foodCart={foodCart}
+            userProfile={userProfile}
+            checkoutData={checkoutData}
+            setCheckoutData={setCheckoutData}
+            handleCheckout={handleCheckout}
+            setCurrentPage={setCurrentPage}
+          />
         );
-      }
-
       case 'itemDetail':
         return (
-          selectedItem && (
-            <div className="h-full flex flex-col bg-white animate-in slide-in-from-bottom">
-              <div className="p-4 flex items-center justify-between border-b border-gray-50">
-                <button
-                  onClick={() => setCurrentPage('market')}
-                  className="p-2 bg-gray-50 rounded-full"
-                >
-                  <ChevronLeft size={22} />
-                </button>
-                <span className="font-black text-xs uppercase tracking-widest text-gray-800">
-                  Product Detail
-                </span>
-                <div className="w-10" />
-              </div>
-
-              <div className="flex-1 overflow-y-auto">
-                <img src={selectedItem.img} className="w-full aspect-square object-cover" />
-                <div className="p-8 space-y-6">
-                  <div className="flex justify-between items-start">
-                    <h1 className="text-xl font-black text-gray-800 uppercase tracking-tighter leading-tight">
-                      {selectedItem.name}
-                    </h1>
-                    <div className="text-2xl font-black text-orange-500">
-                      ${selectedItem.price}
-                    </div>
-                  </div>
-
-                  <div className="p-5 bg-gray-50 rounded-[28px] flex items-center justify-between border border-gray-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-orange-500 font-black text-lg shadow-sm">
-                        {selectedItem.user?.[0] || 'U'}
-                      </div>
-                      <div>
-                        <p className="text-xs font-black text-gray-800">
-                          {selectedItem.user}
-                        </p>
-                        <p className="text-[8px] text-green-600 font-bold uppercase flex items-center gap-1 mt-0.5">
-                          <CheckCircle2 size={10} /> 已驗證成員
-                        </p>
-                      </div>
-                    </div>
-                    <button className="p-2.5 bg-white text-orange-500 rounded-lg shadow-sm border border-orange-50 active:scale-90">
-                      <MessageCircle size={18} />
-                    </button>
-                  </div>
-
-                  <p className="text-sm text-gray-500 leading-relaxed font-medium">
-                    {selectedItem.desc}
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-6 border-t border-gray-50">
-                <button
-                  onClick={() => addToMarketCart(selectedItem)}
-                  className="w-full py-4 bg-orange-500 text-white rounded-[20px] font-black uppercase shadow-xl active:scale-95 transition-all"
-                >
-                  加入購物車
-                </button>
-              </div>
-            </div>
-          )
+          <ItemDetailPage 
+            selectedItem={selectedItem} 
+            setCurrentPage={setCurrentPage} 
+            addToMarketCart={addToMarketCart} 
+          />
         );
-
       case 'historyView':
         return (
-          <div className="h-full flex flex-col bg-slate-50 animate-in slide-in-from-right">
-            <div className="p-4 bg-white border-b flex items-center justify-between">
-              <button
-                onClick={() => setCurrentPage('profile')}
-                className="p-2 active:bg-gray-100 rounded-full text-gray-400"
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <span className="font-black text-xs uppercase tracking-widest text-gray-800">
-                {historyType === 'orders' ? 'Order History' : 'My Vouchers'}
-              </span>
-              <div className="w-10" />
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-5 scrollbar-hide">
-              {userHistory.filter((h) =>
-                historyType === 'orders'
-                  ? h.type.startsWith('order')
-                  : h.type === 'reward'
-              ).length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 opacity-20">
-                  <History size={48} />
-                  <p className="text-[10px] font-black uppercase mt-4">
-                    No Records Found
-                  </p>
-                </div>
-              ) : (
-                userHistory
-                  .filter((h) =>
-                    historyType === 'orders'
-                      ? h.type.startsWith('order')
-                      : h.type === 'reward'
-                  )
-                  .map((h, i) => (
-                    // 找到 userHistory.map((h, i) => ( 之後開始替換
-                    <div
-                      key={i}
-                      className="bg-white p-5 rounded-[28px] border border-gray-100 shadow-sm flex gap-4 items-center"
-                    >
-                      {/* 新增：左側照片預覽 */}
-                      <div className="w-16 h-16 bg-gray-50 rounded-2xl overflow-hidden shrink-0 border border-gray-50">
-                        {h.thumbnail ? (
-                          <img src={h.thumbnail} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-200">
-                            <Package size={24} />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* 右側資訊 */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start mb-1">
-                          <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">
-                            {new Date(h.at).toLocaleDateString()}
-                          </span>
-                          <div
-                            className={`px-2 py-0.5 rounded-full text-[7px] font-black uppercase ${
-                              h.type === 'order_market'
-                                ? 'bg-blue-50 text-blue-500'
-                                : h.type === 'reward'
-                                ? 'bg-orange-50 text-orange-500'
-                                : 'bg-gray-50 text-gray-500'
-                            }`}
-                          >
-                            {h.type === 'order_market' ? '二手市集' : h.type === 'reward' ? '點數兌換' : '校園訂餐'}
-                          </div>
-                        </div>
-
-                        <h4 className="text-[11px] font-black text-gray-800 uppercase truncate">
-                          {h.type === 'reward' ? h.name : h.items.join(', ')}
-                        </h4>
-
-                        <div className="mt-2 flex justify-between items-center">
-                          <span className="text-[9px] font-black text-gray-400 uppercase">Amount</span>
-                          <span className="text-sm font-black text-gray-900 tracking-tighter">
-                            {h.type === 'reward' ? `${h.points} Pts` : `$${h.total}`}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-              )}
-            </div>
-          </div>
+          <HistoryPage 
+            userHistory={userHistory} 
+            historyType={historyType} 
+            setCurrentPage={setCurrentPage} 
+          />
         );
-
       default:
         return (
           <div className="h-full flex items-center justify-center text-gray-400 font-black">
@@ -2404,40 +1288,13 @@ export default function App() {
           </button>
         )}
 
-        {![
-          'itemDetail',
-          'storeDetail',
-          'checkout',
-          'historyView',
-          'exchange',
-          'foodMap',
-          'orderTracking',
-        ].includes(currentPage) && (
-          <nav className="bg-white px-8 py-4 pb-8 flex justify-between items-center shrink-0 z-[90] border-t border-gray-50 relative">
-            {[
-              { id: 'home', icon: Home },
-              { id: 'market', icon: ShoppingBag },
-              { id: 'ordering', icon: Utensils },
-              { id: 'profile', icon: User },
-            ].map((i) => (
-              <button
-                key={i.id}
-                onClick={() => {
-                  if (i.id !== 'home' && !user) return triggerLoginPrompt();
-                  setCurrentPage(i.id);
-                }}
-                className={`flex flex-col items-center gap-1 transition-all ${
-                  currentPage === i.id ? 'text-orange-500 scale-110' : 'text-gray-200'
-                }`}
-              >
-                <i.icon size={20} strokeWidth={currentPage === i.id ? 4 : 2.5} />
-                {currentPage === i.id && (
-                  <div className="w-1.5 h-1.5 bg-orange-500 rounded-full mt-0.5 shadow-lg animate-pulse" />
-                )}
-              </button>
-            ))}
-          </nav>
-        )}
+        <Navbar 
+          currentPage={currentPage} 
+          setCurrentPage={setCurrentPage} 
+          user={user} 
+          triggerLoginPrompt={triggerLoginPrompt}
+          navItems={navItems}
+        />
 
         {(confirmMode === 'clearFoodCart' ||
           confirmMode === 'confirmExchange' ||
@@ -2545,125 +1402,18 @@ export default function App() {
           </div>
         )}
 
-        {isCartOpen && (
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-[200] animate-in fade-in flex items-end">
-            <div className="w-full bg-white max-h-[80%] flex flex-col rounded-t-[50px] shadow-2xl animate-in slide-in-from-bottom snappy-anim">
-              <div className="p-8 pb-4 flex justify-between items-center">
-                <h3 className="font-black text-lg text-gray-800 uppercase tracking-tighter">
-                  My Cart
-                </h3>
-                <button
-                  onClick={() => setIsCartOpen(false)}
-                  className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-gray-300 active:rotate-90 transition-all"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              {!user ? (
-                <div className="p-20 text-center text-gray-400 font-bold">
-                  請先登入以使用購物車
-                </div>
-              ) : (
-                <>
-                  <div className="px-8 py-2 flex gap-3">
-                    <button
-                      onClick={() => setActiveCartTab('market')}
-                      className={`flex-1 py-3 rounded-2xl text-[10px] font-black transition-all ${
-                        activeCartTab === 'market'
-                          ? 'bg-orange-500 text-white shadow-lg'
-                          : 'bg-gray-50 text-gray-300'
-                      }`}
-                    >
-                      市集 ({marketCart.length})
-                    </button>
-                    <button
-                      onClick={() => setActiveCartTab('food')}
-                      className={`flex-1 py-3 rounded-2xl text-[10px] font-black transition-all ${
-                        activeCartTab === 'food'
-                          ? 'bg-red-500 text-white shadow-lg'
-                          : 'bg-gray-50 text-gray-300'
-                      }`}
-                    >
-                      餐飲 ({foodCart.length})
-                    </button>
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto p-8 space-y-3 scrollbar-hide">
-                    {(activeCartTab === 'market' ? marketCart : foodCart).length === 0 ? (
-                      <div className="text-center py-20 text-gray-200 font-black italic text-xs uppercase tracking-widest">
-                        Empty
-                      </div>
-                    ) : (
-                      (activeCartTab === 'market' ? marketCart : foodCart).map((i) => (
-                        <div
-                          key={i.id}
-                          className="flex gap-4 items-center bg-gray-50/50 p-4 rounded-[28px] border border-gray-100 shadow-sm"
-                        >
-                          <img
-                            src={i.img || 'https://via.placeholder.com/150'}
-                            className="w-12 h-12 object-cover rounded-xl"
-                          />
-                          <div className="flex-1">
-                            <h4 className="font-black text-[11px] text-gray-800 truncate uppercase tracking-tighter">
-                              {i.name}
-                            </h4>
-                            <span className="text-orange-500 font-black text-[11px]">
-                              ${i.price * (i.quantity || 1)}
-                            </span>
-                          </div>
-
-                          {activeCartTab === 'food' ? (
-                            <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl shadow-sm border border-gray-100">
-                              <button
-                                onClick={() => updateFoodQty(i.id, -1)}
-                                className="w-6 h-6 flex items-center justify-center bg-gray-50 rounded-lg text-orange-500"
-                              >
-                                <Minus size={12} />
-                              </button>
-                              <span className="text-[11px] font-black min-w-[16px] text-center">
-                                {i.quantity}
-                              </span>
-                              <button
-                                onClick={() => updateFoodQty(i.id, 1)}
-                                className="w-6 h-6 flex items-center justify-center bg-gray-50 rounded-lg text-orange-500"
-                              >
-                                <Plus size={12} />
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-3">
-                                <span className="text-[10px] font-black text-gray-400 bg-gray-100 px-2 py-1 rounded-md">數量: 1</span>
-                                <button
-                                  onClick={() => deleteMarketCartItem(i.id)}
-                                  className="text-gray-200 active:text-red-500 transition-colors p-2"
-                                >
-                                  <Trash2 size={18} />
-                                </button>
-                              </div>
-                            )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  <div className="p-8 border-t border-gray-50">
-                    <button
-                      onClick={() => {
-                        setIsCartOpen(false);
-                        setCurrentPage('checkout');
-                      }}
-                      className="w-full py-4 bg-gray-900 text-white rounded-[20px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all"
-                      disabled={(activeCartTab === 'market' ? marketCart : foodCart).length === 0}
-                    >
-                      結帳
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        )}
+        <CartDrawer 
+          isOpen={isCartOpen}
+          onClose={() => setIsCartOpen(false)}
+          user={user}
+          activeCartTab={activeCartTab}
+          setActiveCartTab={setActiveCartTab}
+          marketCart={marketCart}
+          foodCart={foodCart}
+          updateFoodQty={updateFoodQty}
+          deleteMarketCartItem={deleteMarketCartItem}
+          setCurrentPage={setCurrentPage}
+        />
 
         {isOrderSuccess && (
           <div className="absolute inset-0 bg-white z-[800] flex flex-col items-center justify-center p-12 text-center animate-in zoom-in-95">
@@ -2768,16 +1518,7 @@ export default function App() {
           </div>
         )}
 
-        {toastMsg && (
-          <div className="absolute inset-x-0 bottom-28 flex justify-center z-[1000] px-10 animate-in slide-in-from-bottom snappy-anim">
-            <div className="bg-gray-900/95 backdrop-blur-md text-white px-8 py-5 rounded-full flex items-center gap-4 shadow-2xl border border-white/10">
-              <CheckCircle2 size={18} className="text-orange-500" />
-              <span className="text-xs font-black uppercase tracking-widest">
-                {toastMsg}
-              </span>
-            </div>
-          </div>
-        )}
+        <Toast message={toastMsg} />
 
         <div className="h-5 w-full flex justify-center items-end pb-2 shrink-0 bg-white">
           <div className="w-24 h-[4px] bg-gray-100 rounded-full" />
