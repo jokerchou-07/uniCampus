@@ -77,12 +77,12 @@ const ProfilePage = ({
               <span className="text-[10px] font-black uppercase mt-2 tracking-widest">上傳學生證正反面</span>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Input label="姓名" value={registerForm.name} onChange={(v) => setRegisterForm({...registerForm, name: v})} placeholder="王小明" />
-              <Input label="學號" value={registerForm.studentId} onChange={(v) => setRegisterForm({...registerForm, studentId: v})} placeholder="E140..." />
+              <Input label="姓名" value={registerForm.name} onChange={(v) => setRegisterForm({...registerForm, name: v})} placeholder="" />
+              <Input label="學號" value={registerForm.studentId} onChange={(v) => setRegisterForm({...registerForm, studentId: v})} placeholder="" />
             </div>
-            <Input label="大學 / 系所" value={registerForm.university} onChange={(v) => setRegisterForm({...registerForm, university: v})} placeholder="A大學 資工系" />
-            <Input label="手機號碼 (帳號)" value={registerForm.phone} onChange={(v) => setRegisterForm({...registerForm, phone: v})} placeholder="09xxxxxxxx" />
-            <Input label="密碼" type="password" value={registerForm.password} onChange={(v) => setRegisterForm({...registerForm, password: v})} placeholder="••••" />
+            <Input label="大學 / 系所" value={registerForm.university} onChange={(v) => setRegisterForm({...registerForm, university: v})} placeholder="" />
+            <Input label="手機號碼 (帳號)" value={registerForm.phone} onChange={(v) => setRegisterForm({...registerForm, phone: v})} placeholder="" />
+            <Input label="密碼(至少為六位數)" type="password" value={registerForm.password} onChange={(v) => setRegisterForm({...registerForm, password: v})} placeholder="" />
             <button type="submit" className="w-full py-5 bg-gray-900 text-white rounded-[25px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all mt-4">
               提交審核並註冊
             </button>
@@ -102,14 +102,14 @@ const ProfilePage = ({
         </div>
         <div className="bg-orange-50/50 p-5 rounded-3xl border border-dashed border-orange-200">
           <p className="text-[10px] text-orange-600 font-bold leading-relaxed">
-            此為測試模式<br />請輸入手機 0912345678 與密碼 1234 進行登入
+            此為測試模式<br />請直接申請一支帳號
           </p>
         </div>
         <form onSubmit={handleSignIn} className="space-y-4 text-left">
           <Input label="Phone Number" value={loginForm.phone} onChange={(v) => setLoginForm({...loginForm, phone: v})} placeholder="09xxxxxxxx" />
           <div className="relative">
-            <Input label="Password" type={showPassword ? 'text' : 'password'} value={loginForm.password} onChange={(v) => setLoginForm({...loginForm, password: v})} placeholder="••••" />
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 top-9 text-gray-300">
+            <Input label="Password" type={showPassword ? 'text' : 'password'} value={loginForm.password} onChange={(v) => setLoginForm({...loginForm, password: v})} placeholder="" />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 top-11 text-gray-300">
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>

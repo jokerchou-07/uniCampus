@@ -134,7 +134,7 @@ export default function App() {
     studentId: '',
     phone: '',
     password: '',
-    university: 'A大學',
+    university: '',
   });
   const [isRegistering, setIsRegistering] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -1202,7 +1202,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-200 flex justify-center items-center w-full selection:bg-orange-100">
-      <div className="w-full max-w-full md:max-w-[390px] h-screen md:h-[844px] bg-white md:rounded-[45px] md:shadow-2xl overflow-hidden flex flex-col relative md:border-[10px] md:border-gray-900 transition-all">
+      <div className="w-full max-w-full md:max-w-[390px] min-h-dvh md:h-[844px] bg-white md:rounded-[45px] md:shadow-2xl overflow-hidden flex flex-col relative md:border-[10px] md:border-gray-900 transition-all pb-[calc(7rem+env(safe-area-inset-bottom))]">
         <div className="h-10 flex items-center justify-between px-10 shrink-0 z-[100] bg-white">
           <span className="text-[12px] font-black tracking-tight text-gray-900">
             00:47
@@ -1475,7 +1475,20 @@ export default function App() {
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files[0];
-                  if (file) setNewPost({ ...newPost, imageFile: file });
+                  if (file) {
+                    // 1. 設定限制大小 (2MB)
+                    const MAX_FILE_SIZE = 2 * 1024 * 1024;
+
+                    // 2. 檢查大小
+                    if (file.size > MAX_FILE_SIZE) {
+                      showToast('檔案太大了！圖片不可超過 2MB');
+                      e.target.value = ""; // 重置 input，防止選中該大檔案
+                      return; 
+                    }
+
+                    // 3. 檢查通過才存入 state
+                    setNewPost({ ...newPost, imageFile: file });
+                  }
                 }}
               />
               
