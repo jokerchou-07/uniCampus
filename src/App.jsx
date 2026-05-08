@@ -1203,17 +1203,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-200 flex justify-center items-center w-full selection:bg-orange-100">
       <div className="w-full max-w-full md:max-w-[390px] min-h-dvh md:h-[844px] bg-white md:rounded-[45px] md:shadow-2xl overflow-hidden flex flex-col relative md:border-[10px] md:border-gray-900 transition-all pb-[calc(7rem+env(safe-area-inset-bottom))]">
-        <div className="h-10 flex items-center justify-between px-10 shrink-0 z-[100] bg-white">
-          <span className="text-[12px] font-black tracking-tight text-gray-900">
-            00:47
-          </span>
-          <div className="flex gap-2 items-center">
-            <Smartphone size={14} className="text-gray-800" strokeWidth={3} />
-            <div className="w-6 h-3 border-2 border-gray-900 relative rounded-sm p-[1px]">
-              <div className="w-3/4 h-full bg-gray-900 rounded-[1px]" />
-            </div>
-          </div>
-        </div>
+        
 
         {![
           'itemDetail',
@@ -1224,7 +1214,7 @@ export default function App() {
           'foodMap',
           'orderTracking',
         ].includes(currentPage) && (
-          <header className="px-8 py-2.5 flex justify-between items-center shrink-0 z-[90]">
+          <header className="px-8 pt-[env(safe-area-inset-top)] py-3 flex justify-between items-center shrink-0 z-[90] bg-white">
             <div
               className="flex items-center gap-3 active:scale-95 transition-transform cursor-pointer"
               onClick={() => setCurrentPage('home')}
