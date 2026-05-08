@@ -1201,10 +1201,8 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-200 flex justify-center items-center w-full selection:bg-orange-100">
+    <div className="min-h-dvh bg-slate-200 flex justify-center w-full selection:bg-orange-100">
       <div className="w-full max-w-full md:max-w-[390px] min-h-dvh md:h-[844px] bg-white md:rounded-[45px] md:shadow-2xl overflow-hidden flex flex-col relative md:border-[10px] md:border-gray-900 transition-all pb-[calc(7rem+env(safe-area-inset-bottom))]">
-        
-
         {![
           'itemDetail',
           'storeDetail',
