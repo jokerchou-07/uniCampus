@@ -1,6 +1,5 @@
 import React from 'react';
-import { ChevronLeft, MapPin, CreditCard, Wallet, Store } from 'lucide-react';
-
+import { ChevronLeft, MapPin, CreditCard, Wallet, Store, Gift } from 'lucide-react';
 /**
  * 結帳頁面組件
  */
@@ -14,6 +13,9 @@ const CheckoutPage = ({
   handleCheckout,
   setCurrentPage
 }) => {
+  // 定義回饋點數常數
+  const REWARD_POINTS = 5;
+
   // 計算總金額
   const list = activeCartTab === 'market' ? marketCart : foodCart;
   const total = list.reduce((a, b) => a + (b.price || 0) * (b.quantity || 1), 0);
@@ -25,6 +27,15 @@ const CheckoutPage = ({
     total
   );
   const final = total - redemption;
+  const onConfirm = () => {
+    // 除了原本的 checkoutData，我們傳遞點數異動資訊給父組件
+    handleCheckout({
+      ...checkoutData,
+      usedPoints: redemption,
+      rewardPoints: REWARD_POINTS,
+      finalAmount: final
+    });
+  };
 
   return (
     <div className="h-full flex flex-col bg-white animate-in slide-in-from-right">
@@ -54,6 +65,20 @@ const CheckoutPage = ({
                 <span>SUBTOTAL</span>
                 <span>${total}</span>
               </div>
+              {redemption > 0 && (
+                <div className="flex justify-between items-center mt-1 text-red-500 text-[10px]">
+                  <span>POINTS REDEEMED 點數折抵</span>
+                  <span>-${redemption}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center mt-1 text-green-600 text-[10px] font-bold">
+                <div className="flex items-center gap-1">
+                  <Gift size={10} />
+                  <span>ESTIMATED REWARD 預計回饋</span>
+                </div>
+                <span>+{REWARD_POINTS} Pts</span>
+              </div>
+
               <div className="flex justify-between items-center mt-2 text-2xl font-black text-orange-600 tracking-tighter">
                 <span>TOTAL</span>
                 <span>${final}</span>
@@ -138,7 +163,7 @@ const CheckoutPage = ({
       {/* Footer Confirm */}
       <div className="p-6 border-t border-gray-50 absolute bottom-0 w-full bg-white/95 z-30">
         <button
-          onClick={handleCheckout}
+          onClick={onConfirm}
           className="w-full py-4 bg-gray-900 text-white rounded-[20px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all"
         >
           確認訂單並送出

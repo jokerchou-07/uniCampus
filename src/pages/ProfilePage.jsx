@@ -43,6 +43,14 @@ const ProfilePage = ({
           />
           <MenuButton 
             icon={Gift} 
+            label="點數獲得紀錄" 
+            onClick={() => { 
+              setHistoryType('points'); 
+              setCurrentPage('historyView'); 
+            }} 
+          />
+          <MenuButton 
+            icon={Gift} 
             label="我的兌換" 
             onClick={() => { setHistoryType('redeems'); setCurrentPage('historyView'); }} 
           />

@@ -1,4 +1,5 @@
 import { auth, db, storage } from './lib/firebase';
+import 'leaflet/dist/leaflet.css';
 import { 
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -89,6 +90,7 @@ import StoreDetailPage from './pages/StoreDetailPage';
 import CheckoutPage from './pages/CheckoutPage';
 import HistoryPage from './pages/HistoryPage';
 import ExchangePage from './pages/ExchangePage';
+import FoodMapPage from './pages/FoodMapPage';
 
 // -----------------------------
 // Firebase 安全初始化
@@ -118,7 +120,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState({
-    points: 1280,
+    points: '---',
     name: '訪客',
     phone: '未登入',
   });
@@ -213,6 +215,7 @@ export default function App() {
         ...prev,
         receiver: localProfile.name || '',
         phone: localProfile.phone || '',
+        pointRedemption: 0,
       }));
       setIsLoading(false);
       return;
@@ -390,7 +393,7 @@ export default function App() {
         studentId: registerForm.studentId,
         phone: registerForm.phone,
         university: registerForm.university,
-        points: 500,
+        points: 200,
       };
       setUser(localUser);
       setUserProfile(profile);
@@ -685,7 +688,7 @@ export default function App() {
 
   // 記得確認檔案最上方有 import { updateDoc } from 'firebase/firestore';
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (orderDataFromPage) => {
     if (!user) return;
 
     const target = activeCartTab === 'market' ? marketCart : foodCart;
@@ -697,12 +700,15 @@ export default function App() {
       userProfile.points || 0,
       total
     );
+    const REWARD_POINTS = 5; 
+    // 計算最終點數：原有點數 - 折抵 + 回饋
+    const updatedPoints = userProfile.points - redemption + REWARD_POINTS;
 
     setIsLoading(true); // 開始處理，顯示讀取中
 
     // 1. 本地模式處理 (Local Mode)
     if (!firebaseEnabled) {
-      // ... (保持你原本的本地處理邏輯即可)
+      setUserProfile((prev) => ({ ...prev, points: updatedPoints }));
       setIsOrderSuccess(true);
       setIsLoading(false);
       return;
@@ -711,13 +717,12 @@ export default function App() {
     // 2. Firebase 模式處理
     try {
       // A. 處理點數折抵
-      if (redemption > 0) {
-        await setDoc(
-          doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'info'),
-          { points: userProfile.points - redemption },
-          { merge: true }
-        );
-      }
+      await setDoc(
+        doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'info'),
+        { points: updatedPoints },
+        { merge: true }  
+      );  
+      
 
       // B. 寫入訂單歷史
       await addDoc(
@@ -872,16 +877,51 @@ export default function App() {
       };
 
       if (firebaseEnabled) {
-        const marketRef = collection(db, 'artifacts', appId, 'public', 'data', 'marketItems');
+        const marketRef = collection(
+          db,
+          'artifacts',
+          appId,
+          'public',
+          'data',
+          'marketItems'
+        );
+
         await addDoc(marketRef, postData);
+
+        // 上架回饋 +2 點
+        await setDoc(
+          doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'info'),
+          {
+            points: (userProfile.points || 0) + 2
+          },
+          { merge: true }
+        );
+
+        // 寫入歷史紀錄（可選）
+        await addDoc(
+          collection(db, 'artifacts', appId, 'users', user.uid, 'history'),
+          {
+            type: 'upload_reward',
+            name: '二手商品上架回饋',
+            pointsRewarded: 2,
+            at: Date.now()
+          }
+        );
+
         console.log("Firestore 寫入成功 (Base64 模式)");
       } else {
         setMarketItems((prev) => [{ id: Date.now(), ...postData }, ...prev]);
+
+        // Local 模式也加點
+        setUserProfile((prev) => ({
+          ...prev,
+          points: (prev.points || 0) + 2
+        }));
       }
 
       setIsUploadOpen(false);
       setNewPost({ name: '', price: '', category: '玩具', desc: '', imageFile: null });
-      showToast('商品已成功上架');
+      showToast('商品已成功上架，點數+2');
     } catch (error) {
       console.error("錯誤細節:", error);
       showToast('發佈失敗：圖片可能太大 (需小於 1MB)');
@@ -992,57 +1032,10 @@ export default function App() {
         );
       case 'foodMap':
         return (
-          <div className="h-full bg-gray-50 flex flex-col animate-in slide-in-from-right">
-            <div className="p-4 bg-white border-b border-gray-100 flex items-center justify-between">
-              <button
-                onClick={() => setCurrentPage('home')}
-                className="p-2 bg-gray-50 rounded-full"
-              >
-                <ChevronLeft />
-              </button>
-              <span className="font-black text-xs uppercase tracking-widest text-gray-800">
-                i 珍食地圖
-              </span>
-              <div className="w-10" />
-            </div>
-
-            <div className="flex-1 p-6 space-y-4">
-              <div className="bg-white p-5 rounded-[32px] shadow-sm border border-green-100 flex items-center gap-4">
-                <div className="w-12 h-12 bg-green-500 text-white rounded-2xl flex items-center justify-center">
-                  <MapPin size={24} />
-                </div>
-                <div>
-                  <p className="text-xs font-black text-gray-800">校園周邊 7-11 分佈</p>
-                  <p className="text-[9px] text-green-600 font-bold uppercase tracking-widest">
-                    偵測到 3 間門市提供 i 珍食折扣
-                  </p>
-                </div>
-              </div>
-
-              {[
-                { n: 'A大一門市', d: '150m', s: '8件' },
-                { n: 'A大二門市', d: '320m', s: '12件' },
-                { n: 'A大三門市', d: '450m', s: '3件' },
-              ].map((shop, i) => (
-                <div
-                  key={i}
-                  className="bg-white p-5 rounded-[32px] shadow-sm flex justify-between items-center border border-gray-50"
-                >
-                  <div>
-                    <h4 className="font-black text-sm text-gray-800">{shop.n}</h4>
-                    <p className="text-[9px] text-gray-400 font-bold mt-1">
-                      距離約 {shop.d}
-                    </p>
-                  </div>
-                  <span className="bg-green-50 text-green-600 text-[10px] font-black px-3 py-1 rounded-full">
-                    {shop.s} 品項中
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <FoodMapPage 
+            setCurrentPage={setCurrentPage}
+          />
         );
-
       case 'orderTracking':
         return (
           <div className="h-full bg-blue-50/20 flex flex-col animate-in slide-in-from-right">
@@ -1212,7 +1205,9 @@ export default function App() {
           'foodMap',
           'orderTracking',
         ].includes(currentPage) && (
-          <header className="px-8 pt-[env(safe-area-inset-top)] py-3 flex justify-between items-center shrink-0 z-[90] bg-white">
+          <header 
+          style={{ paddingTop: `calc(env(safe-area-inset-top) + 20px)` }}
+          className="px-8 py-3 flex justify-between items-center shrink-0 z-[90] bg-white">
             <div
               className="flex items-center gap-3 active:scale-95 transition-transform cursor-pointer"
               onClick={() => setCurrentPage('home')}
@@ -1258,7 +1253,7 @@ export default function App() {
               );
               setIsCartOpen(true);
             }}
-            className="absolute bottom-24 right-6 w-14 h-14 bg-gray-900 text-white rounded-full shadow-2xl flex items-center justify-center active:scale-90 z-[100] border-4 border-white transition-all"
+            className="fixed bottom-24 right-6 w-14 h-14 bg-gray-900 text-white rounded-full shadow-2xl flex items-center justify-center active:scale-90 z-[100] border-4 border-white transition-all"
           >
             <ShoppingCart size={20} />
             {user &&

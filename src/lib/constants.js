@@ -90,10 +90,10 @@ export const CAMPUS_STORES = [
  * 點數兌換獎勵資料
  */
 export const STUDENT_REWARDS = [
-  { id: 'r1', name: '期末加油包', points: 450, brand: '熬夜必備', desc: '內含大杯美式咖啡 x1 + 能量飲 x1', icon: Coffee },
-  { id: 'r2', name: '歐趴糖禮盒', points: 600, brand: 'ALL PASS', desc: '精選進口巧克力與綜合果乾', icon: Gift },
-  { id: 'r3', name: '校園影印100張', points: 200, brand: '報告救星', desc: '校內影印部專用', icon: BookOpen },
-  { id: 'r4', name: '校內餐廳優惠卷', points: 100, brand: '專屬福利', desc: '享 50 元現折優惠', icon: Zap },
+  { id: 'r1', name: '期末加油包', points: 150, brand: '熬夜必備', desc: '內含大杯美式咖啡 x1 + 能量飲 x1', icon: Coffee },
+  { id: 'r2', name: '歐趴糖禮盒', points: 250, brand: 'ALL PASS', desc: '精選進口巧克力與綜合果乾', icon: Gift },
+  { id: 'r3', name: '校園影印100張', points: 50, brand: '報告救星', desc: '校內影印部專用', icon: BookOpen },
+  { id: 'r4', name: '校內餐廳優惠卷', points: 30, brand: '專屬福利', desc: '享 50 元現折優惠', icon: Zap },
 ];
 
 /** 

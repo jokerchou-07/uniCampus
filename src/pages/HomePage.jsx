@@ -29,9 +29,9 @@ const HomePage = ({
   };
 
   return (
-    <div className="px-8 py-2 space-y-6 animate-in fade-in">
+    <div className="px-8 space-y-6 animate-in fade-in">
       {/* 歡迎區塊 */}
-      <div className="flex justify-between items-center pt-4">
+      <div className="flex justify-between items-center pt-2">
         <div className="space-y-0.5">
           <span className="text-[9px] font-black text-orange-400 uppercase tracking-[0.3em] block">Welcome Back</span>
           <h1 className="text-2xl font-black text-[#1A1A1A] tracking-tight leading-none">
@@ -46,24 +46,38 @@ const HomePage = ({
       </div>
 
       {/* 餘額卡片 */}
-      <div className="relative h-40 rounded-[35px] overflow-hidden shadow-[0_15px_30px_-10px_rgba(255,130,0,0.3)] border border-orange-200">
+      <div 
+        onClick={() => handleServiceClick('exchange')}
+        className="relative h-40 rounded-[35px] overflow-hidden shadow-[0_15px_30px_-10px_rgba(255,130,0,0.3)] border border-orange-200 cursor-pointer active:scale-[0.98] transition-all"
+      >
         <div className="absolute inset-0 bg-gradient-to-br from-[#FF9838] via-[#FF8200] to-[#FF4E00]" />
+
         <div className="relative z-10 p-8 h-full flex flex-col justify-between text-white">
           <div className="flex justify-between items-start">
-            <span className="text-[13px] font-bold text-white/80 uppercase tracking-[0.1em]">Openpoint Balance</span>
-            <button 
-              onClick={() => handleServiceClick('exchange')}
-              className="p-1.5 bg-white/20 backdrop-blur-md rounded-xl border border-white/20 active:scale-90"
-            >
+            <span className="text-[13px] font-bold text-white/80 uppercase tracking-[0.1em]">
+              Openpoint Balance
+            </span>
+
+            <div className="p-1.5 bg-white/20 backdrop-blur-md rounded-xl border border-white/20">
               <Ticket size={20} />
-            </button>
+            </div>
           </div>
+
           <div className="flex items-baseline gap-2">
-            <span className="text-4xl font-black italic tracking-tighter">{user ? userProfile.points : '---'}</span>
-            <span className="text-xs font-black text-white/50 uppercase tracking-widest italic">Pts</span>
+            <span className="text-5xl font-black italic tracking-tighter">
+              {user ? userProfile.points : '---'}
+            </span>
+
+            <span className="text-xs font-black text-white/50 uppercase tracking-widest italic">
+              Pts
+            </span>
           </div>
+
           <div className="w-full h-1 bg-black/10 rounded-full overflow-hidden">
-            <div className="h-full bg-white rounded-full shadow-[0_0_8px_white]" style={{ width: user ? '65%' : '0%' }} />
+            <div
+              className="h-full bg-white rounded-full shadow-[0_0_8px_white]"
+              style={{ width: user ? '65%' : '0%' }}
+            />
           </div>
         </div>
       </div>
