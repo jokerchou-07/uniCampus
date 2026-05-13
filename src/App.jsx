@@ -694,68 +694,139 @@ export default function App() {
     const target = activeCartTab === 'market' ? marketCart : foodCart;
     if (target.length === 0) return;
 
-    const total = target.reduce((a, b) => a + (b.price || 0) * (b.quantity || 1), 0);
+    const total = target.reduce(
+      (a, b) => a + (b.price || 0) * (b.quantity || 1),
+      0
+    );
+
     const redemption = Math.min(
       checkoutData.pointRedemption || 0,
       userProfile.points || 0,
       total
     );
-    const REWARD_POINTS = 5; 
-    // 計算最終點數：原有點數 - 折抵 + 回饋
-    const updatedPoints = userProfile.points - redemption + REWARD_POINTS;
 
-    setIsLoading(true); // 開始處理，顯示讀取中
+    // 餐廳回饋 6 點，二手市場回饋 5 點
+    const REWARD_POINTS = activeCartTab === 'food' ? 5 : 5;
 
-    // 1. 本地模式處理 (Local Mode)
+    const updatedPoints =
+      (userProfile.points || 0) - redemption + REWARD_POINTS;
+
+    setIsLoading(true);
+
     if (!firebaseEnabled) {
-      setUserProfile((prev) => ({ ...prev, points: updatedPoints }));
+      setUserProfile((prev) => ({
+        ...prev,
+        points: updatedPoints,
+      }));
+
+      const orderHistory = {
+        id: `h_${Date.now()}`,
+        type: activeCartTab === 'market' ? 'order_market' : 'order_food',
+        thumbnail: target[0]?.img || '',
+        items: target.map((i) => i.name),
+        details: target.map((i) => ({
+          name: i.name,
+          price: i.price,
+          quantity: i.quantity || 1,
+        })),
+        total,
+        pointsRedeemed: redemption,
+        pointsRewarded: REWARD_POINTS,
+        finalPaid: total - redemption,
+        at: Date.now(),
+        status: 'completed',
+      };
+
+      const rewardHistory = {
+        id: `r_${Date.now()}`,
+        type: 'point_reward',
+        source:
+          activeCartTab === 'food'
+            ? '餐廳消費回饋'
+            : '二手市集消費回饋',
+        pointsRewarded: REWARD_POINTS,
+        at: Date.now(),
+      };
+
+      setUserHistory((prev) =>
+        [rewardHistory, orderHistory, ...prev].sort((a, b) => b.at - a.at)
+      );
+
+      if (activeCartTab === 'market') {
+        setMarketCart([]);
+      } else {
+        setFoodCart([]);
+      }
+      setCheckoutData((prev) => ({
+        ...prev,
+        pointRedemption: 0,
+      }));
       setIsOrderSuccess(true);
       setIsLoading(false);
       return;
     }
 
-    // 2. Firebase 模式處理
     try {
-      // A. 處理點數折抵
       await setDoc(
         doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'info'),
-        { points: updatedPoints },
-        { merge: true }  
-      );  
-      
+        {
+          points: updatedPoints,
+        },
+        { merge: true }
+      );
 
-      // B. 寫入訂單歷史
       await addDoc(
         collection(db, 'artifacts', appId, 'users', user.uid, 'history'),
         {
           type: activeCartTab === 'market' ? 'order_market' : 'order_food',
-          // 為了讓紀錄頁面好看，我們可以多存一張代表圖 (取第一件商品的圖)
-          thumbnail: target[0]?.img || '', 
-          // 存入所有品項名稱
+          thumbnail: target[0]?.img || '',
           items: target.map((i) => i.name),
-          // 紀錄每一項的詳細資料 (選配，若想做細節頁面可用)
-          details: target.map(i => ({ name: i.name, price: i.price })),
+          details: target.map((i) => ({
+            name: i.name,
+            price: i.price,
+            quantity: i.quantity || 1,
+          })),
           total,
           pointsRedeemed: redemption,
+          pointsRewarded: REWARD_POINTS,
           finalPaid: total - redemption,
           at: Date.now(),
-          status: 'completed' // 標記交易完成
+          status: 'completed',
         }
       );
 
-      // C. 關鍵修改：逐一處理購物車品項
+      await addDoc(
+        collection(db, 'artifacts', appId, 'users', user.uid, 'history'),
+        {
+          type: 'point_reward',
+          source:
+            activeCartTab === 'food'
+              ? '餐廳消費回饋'
+              : '二手市集消費回饋',
+          pointsRewarded: REWARD_POINTS,
+          at: Date.now(),
+        }
+      );
+
       for (const item of target) {
-        // 如果是市集商品，將公眾資料庫中的商品狀態改為「已售出」
         if (activeCartTab === 'market') {
-          const itemRef = doc(db, 'artifacts', appId, 'public', 'data', 'marketItems', item.id.toString());
+          const itemRef = doc(
+            db,
+            'artifacts',
+            appId,
+            'public',
+            'data',
+            'marketItems',
+            item.id.toString()
+          );
+
           await updateDoc(itemRef, {
-            status: 'sold',     // 標記售出
-            buyerId: user.uid,  // 紀錄買家
-            soldAt: Date.now()  // 紀錄時間
+            status: 'sold',
+            buyerId: user.uid,
+            soldAt: Date.now(),
           });
         }
 
-        // 將品項從個人購物車（市集或訂餐）中刪除
         await deleteDoc(
           doc(
             db,
@@ -768,11 +839,14 @@ export default function App() {
           )
         );
       }
-
+      setCheckoutData((prev) => ({
+        ...prev,
+        pointRedemption: 0,
+      }));
       setIsOrderSuccess(true);
     } catch (error) {
-      console.error("結帳失敗:", error);
-      showToast("結帳過程發生錯誤");
+      console.error('結帳失敗:', error);
+      showToast('結帳過程發生錯誤');
     } finally {
       setIsLoading(false);
     }
@@ -1195,7 +1269,7 @@ export default function App() {
 
   return (
     <div className="min-h-dvh bg-slate-200 flex justify-center w-full selection:bg-orange-100">
-      <div className="w-full max-w-full md:max-w-[390px] min-h-dvh md:h-[844px] bg-white md:rounded-[45px] md:shadow-2xl overflow-hidden flex flex-col relative md:border-[10px] md:border-gray-900 transition-all pb-[calc(7rem+env(safe-area-inset-bottom))]">
+      <div className="w-full max-w-full min-h-dvh bg-white overflow-hidden flex flex-col relative transition-all pb-[calc(7rem+env(safe-area-inset-bottom))]">
         {![
           'itemDetail',
           'storeDetail',
@@ -1396,6 +1470,7 @@ export default function App() {
           updateFoodQty={updateFoodQty}
           deleteMarketCartItem={deleteMarketCartItem}
           setCurrentPage={setCurrentPage}
+          setCheckoutData={setCheckoutData}
         />
 
         {isOrderSuccess && (

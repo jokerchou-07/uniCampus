@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ChevronLeft, MapPin, CreditCard, Wallet, Store, Gift } from 'lucide-react';
 /**
  * 結帳頁面組件
@@ -14,7 +14,7 @@ const CheckoutPage = ({
   setCurrentPage
 }) => {
   // 定義回饋點數常數
-  const REWARD_POINTS = 5;
+  const REWARD_POINTS = activeCartTab === 'food' ? 5 : 5;
 
   // 計算總金額
   const list = activeCartTab === 'market' ? marketCart : foodCart;
@@ -27,6 +27,12 @@ const CheckoutPage = ({
     total
   );
   const final = total - redemption;
+  useEffect(() => {
+    setCheckoutData((prev) => ({
+      ...prev,
+      pointRedemption: 0,
+    }));
+  }, [activeCartTab]);
   const onConfirm = () => {
     // 除了原本的 checkoutData，我們傳遞點數異動資訊給父組件
     handleCheckout({

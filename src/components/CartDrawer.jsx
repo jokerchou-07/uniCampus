@@ -14,7 +14,8 @@ const CartDrawer = ({
   foodCart, 
   updateFoodQty, 
   deleteMarketCartItem, 
-  setCurrentPage 
+  setCurrentPage,
+  setCheckoutData 
 }) => {
   if (!isOpen) return null;
 
@@ -90,7 +91,15 @@ const CartDrawer = ({
             {/* Footer Button */}
             <div className="p-8 border-t border-gray-50">
               <button
-                onClick={() => { onClose(); setCurrentPage('checkout'); }}
+                onClick={() => {
+                  setCheckoutData((prev) => ({
+                    ...prev,
+                    pointRedemption: 0,
+                  }));
+
+                  onClose();
+                  setCurrentPage('checkout');
+                }}
                 className="w-full py-4 bg-gray-900 text-white rounded-[20px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all"
                 disabled={currentList.length === 0}
               >

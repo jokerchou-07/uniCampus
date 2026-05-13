@@ -102,7 +102,7 @@ const HistoryPage = ({ userHistory, historyType, setCurrentPage }) => {
 
                   <h4 className="text-[11px] font-black text-gray-800 uppercase truncate">
                     {isPointReward
-                      ? h.name || '獲得點數'
+                      ? h.source || '獲得點數'
                       : h.type === 'reward'
                       ? h.name
                       : h.items?.join(', ')}
