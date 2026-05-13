@@ -1,0 +1,20 @@
+{
+  "short_name": "UniCampus",
+  "name": "Uni-Campus 大學校園小幫手",
+  "description": "提供大學生最便利的校園市集、美食點餐與點數回饋系統",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#f97316",
+  "background_color": "#ffffff",
+  "scope": "/",
+  "lang": "zh-Hant-TW"
+}
