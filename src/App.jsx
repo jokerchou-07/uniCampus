@@ -976,7 +976,9 @@ export default function App() {
           collection(db, 'artifacts', appId, 'users', user.uid, 'history'),
           {
             type: 'upload_reward',
+            source: '上架點數回饋',
             name: '二手商品上架回饋',
+            thumbnail: finalImageUrl,
             pointsRewarded: 2,
             at: Date.now()
           }

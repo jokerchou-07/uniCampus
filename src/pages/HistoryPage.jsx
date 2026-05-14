@@ -3,16 +3,21 @@ import { ChevronLeft, History, Package, Gift } from 'lucide-react';
 
 const HistoryPage = ({ userHistory, historyType, setCurrentPage }) => {
   const filteredHistory = userHistory.filter((h) => {
+    // 訂單紀錄
     if (historyType === 'orders') {
       return h.type?.startsWith('order');
     }
 
+    // 點數兌換紀錄
     if (historyType === 'redeems') {
       return h.type === 'reward';
     }
 
+    // 點數回饋紀錄
+    // 只顯示真正有點數回饋的資料
+    // 避免 point_reward 重複顯示
     if (historyType === 'points') {
-      return h.pointsRewarded > 0 || h.type === 'point_reward';
+      return h.pointsRewarded > 0 && h.type !== 'point_reward';
     }
 
     return false;
@@ -27,6 +32,7 @@ const HistoryPage = ({ userHistory, historyType, setCurrentPage }) => {
 
   return (
     <div className="h-full flex flex-col bg-slate-50 animate-in slide-in-from-right">
+      {/* Header */}
       <div className="p-4 bg-white border-b flex items-center justify-between">
         <button
           onClick={() => setCurrentPage('profile')}
@@ -42,6 +48,7 @@ const HistoryPage = ({ userHistory, historyType, setCurrentPage }) => {
         <div className="w-10" />
       </div>
 
+      {/* Content */}
       <div className="flex-1 overflow-y-auto p-6 space-y-5 scrollbar-hide">
         {filteredHistory.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 opacity-20">
@@ -59,6 +66,7 @@ const HistoryPage = ({ userHistory, historyType, setCurrentPage }) => {
                 key={i}
                 className="bg-white p-5 rounded-[28px] border border-gray-100 shadow-sm flex gap-4 items-center"
               >
+                {/* Thumbnail */}
                 <div className="w-16 h-16 bg-gray-50 rounded-2xl overflow-hidden shrink-0 border border-gray-50">
                   {h.thumbnail ? (
                     <img
@@ -68,15 +76,22 @@ const HistoryPage = ({ userHistory, historyType, setCurrentPage }) => {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-200">
-                      {isPointReward ? <Gift size={24} /> : <Package size={24} />}
+                      {isPointReward ? (
+                        <Gift size={24} />
+                      ) : (
+                        <Package size={24} />
+                      )}
                     </div>
                   )}
                 </div>
 
+                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start mb-1">
                     <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">
-                      {new Date(h.at).toLocaleDateString()}
+                      {h.at
+                        ? new Date(h.at).toLocaleDateString()
+                        : ''}
                     </span>
 
                     <div
@@ -100,14 +115,22 @@ const HistoryPage = ({ userHistory, historyType, setCurrentPage }) => {
                     </div>
                   </div>
 
+                  {/* Title */}
                   <h4 className="text-[11px] font-black text-gray-800 uppercase truncate">
                     {isPointReward
-                      ? h.source || '獲得點數'
+                      ? h.type === 'order_market'
+                        ? '二手市場購買回饋'
+                        : h.type === 'order_food'
+                        ? '餐廳購買回饋'
+                        : h.type === 'upload_market'
+                        ? '上架二手物品點數回饋'
+                        : h.source || '獲得點數'
                       : h.type === 'reward'
                       ? h.name
                       : h.items?.join(', ')}
                   </h4>
 
+                  {/* Bottom */}
                   <div className="mt-2 flex justify-between items-center">
                     <span className="text-[9px] font-black text-gray-400 uppercase">
                       {isPointReward ? 'Reward' : 'Amount'}
@@ -115,7 +138,9 @@ const HistoryPage = ({ userHistory, historyType, setCurrentPage }) => {
 
                     <span
                       className={`text-sm font-black tracking-tighter ${
-                        isPointReward ? 'text-green-600' : 'text-gray-900'
+                        isPointReward
+                          ? 'text-green-600'
+                          : 'text-gray-900'
                       }`}
                     >
                       {isPointReward
