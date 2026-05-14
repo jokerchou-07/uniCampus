@@ -1133,18 +1133,25 @@ export default function App() {
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 {[
                   {
-                    id: 'UNI-88271',
+                    id: 'UNI-199259',
                     item: 'MacBook Air M1',
                     status: '派送中',
                     time: '10:45 AM',
                     color: 'blue',
                   },
                   {
-                    id: 'DIN-44120',
-                    item: '學霸簡餐 - 豬排丼',
-                    status: '餐點製作中',
+                    id: 'UNI-475999',
+                    item: '二手電子學課本',
+                    status: '轉運中',
                     time: '12:30 PM',
-                    color: 'orange',
+                    color: 'blue',
+                  },
+                  {
+                    id: 'UNI-199247',
+                    item: '專輯',
+                    status: '已到店',
+                    time: '04:07 PM',
+                    color: 'blue',
                   },
                 ].map((order, i) => {
                   const pill = colorClasses(order.color);

@@ -18,7 +18,7 @@ const Navbar = ({ currentPage, setCurrentPage, user, triggerLoginPrompt, navItem
   if (hideNavPages.includes(currentPage)) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white px-8 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] flex justify-between items-center z-[90] border-t border-gray-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white px-8 py-4 pb-[calc(2rem+env(safe-area-inset-bottom))] flex justify-between items-center z-[90] border-t border-gray-50">
       {navItems.map((i) => (
         <button
           key={i.id}
