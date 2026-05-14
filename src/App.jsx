@@ -868,7 +868,7 @@ export default function App() {
       return showToast('請輸入商品價格');
     }
     
-    if (Number(newPost.price) < 0) {
+    if (Number(newPost.price) < 1) {
       return showToast('價格不能小於 0');
     }
 
@@ -1575,7 +1575,7 @@ export default function App() {
                 <input
                   required
                   type="number"
-                  min="0"
+                  min="1"
                   className="w-full p-5 bg-gray-50 rounded-[20px] text-xs font-bold outline-none border border-gray-100"
                   placeholder="價格"
                   value={newPost.price}
