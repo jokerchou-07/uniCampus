@@ -109,8 +109,8 @@ const FoodMapPage = ({ setCurrentPage }) => {
   }, []);
 
   return (
-  <div className="fixed inset-0 bg-white overflow-hidden touch-pan-y font-sans text-gray-900">
-    {/* Header */}
+    <div className="fixed inset-0 bg-white overflow-hidden font-sans text-gray-900">
+      {/* Header */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b z-[4000] flex items-center justify-between px-4">
         <button
           onClick={() => setCurrentPage('home')}
@@ -135,10 +135,10 @@ const FoodMapPage = ({ setCurrentPage }) => {
       </header>
 
       {/* Map Section */}
-      <div className="fixed top-16 left-0 right-0 h-[45dvh] z-[1000] bg-gray-100">
+      <div className="fixed top-16 left-0 right-0 h-[430px] z-[1000] bg-gray-100">
         <MapContainer
           center={mapCenter || [23.973875, 120.977503]}
-          zoom={4}
+          zoom={7}
           zoomControl={false}
           style={{ height: '100%', width: '100%' }}
         >
@@ -169,7 +169,7 @@ const FoodMapPage = ({ setCurrentPage }) => {
       </div>
 
       {/* List Section */}
-      <div className="absolute inset-x-0 bottom-0 top-[42%] z-[2000] bg-white rounded-t-[32px] shadow-[0_-12px_30px_rgba(0,0,0,0.08)] flex flex-col overflow-hidden">
+      <div className="absolute top-[470px] left-0 right-0 bottom-0 z-[2000] bg-white rounded-t-[32px] shadow-[0_-12px_30px_rgba(0,0,0,0.08)] flex flex-col overflow-hidden">
         <div className="shrink-0 bg-white pt-4">
           <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-3" />
 
@@ -191,7 +191,7 @@ const FoodMapPage = ({ setCurrentPage }) => {
           </div>
         </div>
 
-          <div className="flex-1 overflow-y-auto px-5 py-4 pb-[calc(7rem+env(safe-area-inset-bottom))] overscroll-contain">
+        <div className="flex-1 overflow-y-auto px-5 py-4 pb-12 custom-scrollbar">
           {loading && (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400 text-sm">
               <Loader2 className="animate-spin mb-3 text-green-500" size={32} />
