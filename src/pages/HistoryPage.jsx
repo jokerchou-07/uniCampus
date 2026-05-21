@@ -1,7 +1,7 @@
 import React from 'react';
 import { ChevronLeft, History, Package, Gift } from 'lucide-react';
 
-const HistoryPage = ({ userHistory, historyType, setCurrentPage }) => {
+const HistoryPage = ({ userHistory, historyType, setCurrentPage, onOrderClick }) => {
   const filteredHistory = userHistory.filter((h) => {
     // 訂單紀錄
     if (historyType === 'orders') {
@@ -31,8 +31,7 @@ const HistoryPage = ({ userHistory, historyType, setCurrentPage }) => {
       : 'Point Rewards';
 
   return (
-    <div className="h-full flex flex-col bg-slate-50 animate-in slide-in-from-right">
-      {/* Header */}
+    <div className="h-full flex flex-col bg-white animate-in slide-in-from-right">      {/* Header */}
       <div className="p-4 bg-white border-b flex items-center justify-between">
         <button
           onClick={() => setCurrentPage('profile')}
@@ -60,11 +59,20 @@ const HistoryPage = ({ userHistory, historyType, setCurrentPage }) => {
         ) : (
           filteredHistory.map((h, i) => {
             const isPointReward = historyType === 'points';
+            const isOrder = historyType === 'orders'; // 👈 判斷當前是否為訂單模式
 
             return (
               <div
                 key={i}
-                className="bg-white p-5 rounded-[28px] border border-gray-100 shadow-sm flex gap-4 items-center"
+                onClick={() => {
+                  // 👈 只有在訂單模式、且有傳入點擊函式時才觸發跳轉
+                  if (isOrder && onOrderClick) {
+                    onOrderClick(h);
+                  }
+                }}
+                className={`bg-white p-5 rounded-[28px] border border-gray-100 shadow-sm flex gap-4 items-center transition-all ${
+                  isOrder ? 'cursor-pointer active:scale-[0.99] active:bg-gray-50/50' : ''
+                }`} // 👈 如果是訂單卡片，加上點擊手勢與縮放反饋回饋
               >
                 {/* Thumbnail */}
                 <div className="w-16 h-16 bg-gray-50 rounded-2xl overflow-hidden shrink-0 border border-gray-50">

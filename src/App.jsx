@@ -91,6 +91,7 @@ import CheckoutPage from './pages/CheckoutPage';
 import HistoryPage from './pages/HistoryPage';
 import ExchangePage from './pages/ExchangePage';
 import FoodMapPage from './pages/FoodMapPage';
+import OrderDetailPage from './pages/OrderDetailPage';
 
 // -----------------------------
 // Firebase 安全初始化
@@ -146,6 +147,7 @@ export default function App() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
   const [selectedTrackingOrder, setSelectedTrackingOrder] = useState(null);
+  const [selectedHistoryOrder, setSelectedHistoryOrder] = useState(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [activeCartTab, setActiveCartTab] = useState('market');
   const [isOrderSuccess, setIsOrderSuccess] = useState(false);
@@ -1264,11 +1266,22 @@ export default function App() {
           />
         );
       case 'historyView':
-        return (
+        return selectedHistoryOrder ? (
+          <OrderDetailPage 
+            order={selectedHistoryOrder} 
+            setCurrentPage={(page) => {
+              // 讓返回按鈕可以清除選中狀態，退回列表
+              if (page === 'historyView') setSelectedHistoryOrder(null);
+              setCurrentPage(page);
+            }} 
+          />
+        ) : (
           <HistoryPage 
             userHistory={userHistory} 
             historyType={historyType} 
-            setCurrentPage={setCurrentPage} 
+            setCurrentPage={setCurrentPage}
+            // 👈 把這行綁定下去，讓子元件可以點擊
+            onOrderClick={(order) => setSelectedHistoryOrder(order)} 
           />
         );
       default:
@@ -1281,7 +1294,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-dvh bg-slate-200 flex justify-center w-full selection:bg-orange-100">
+    <div className="min-h-dvh bg-white flex justify-center w-full selection:bg-orange-100">
       <div className="w-full max-w-full min-h-dvh bg-white overflow-hidden flex flex-col relative transition-all pb-[calc(7rem+env(safe-area-inset-bottom))]">
         {![
           'itemDetail',
@@ -1605,9 +1618,6 @@ export default function App() {
 
         <Toast message={toastMsg} />
 
-        <div className="h-5 w-full flex justify-center items-end pb-2 shrink-0 bg-white">
-          <div className="w-24 h-[4px] bg-gray-100 rounded-full" />
-        </div>
       </div>
 
       <style>{`
