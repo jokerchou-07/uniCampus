@@ -1494,8 +1494,8 @@ export default function App() {
             <h2 className="text-3xl font-black italic tracking-tighter text-gray-900 leading-none">
               訂單已完成！
             </h2>
-            <p className="text-[11px] text-gray-400 mt-5 px-6 leading-relaxed font-bold uppercase tracking-widest italic opacity-60">
-              您的訂單已成功送出，謝謝您的使用。
+            <p className="text-[12px] text-gray-400 mt-5 px-6 leading-relaxed font-bold uppercase tracking-widest italic opacity-60">
+              點數回饋已回饋至帳號。
             </p>
             <button
               onClick={() => {
@@ -1552,7 +1552,7 @@ export default function App() {
 
                     // 2. 檢查大小
                     if (file.size > MAX_FILE_SIZE) {
-                      showToast('檔案太大了！圖片不可超過 2MB');
+                      showToast('檔案太大！圖片不可超過 2MB');
                       e.target.value = ""; // 重置 input，防止選中該大檔案
                       return; 
                     }
